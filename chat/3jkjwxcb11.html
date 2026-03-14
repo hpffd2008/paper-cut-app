@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>作品欣赏</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="./bootstrap-4.6.2-dist/bootstrap-4.6.2-dist/js/jquery.min.js"></script>
+    <script src="./bootstrap-4.6.2-dist/bootstrap-4.6.2-dist/js/bootstrap.min.js"></script>
+    <script src="./vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+
+    <style>
+        /* 全局样式 */
+        body {
+            font-family: 'Microsoft YaHei', 'STKaiti', sans-serif;
+            background: linear-gradient(135deg, #f9f0e9, #f5e3da);
+            color: #8c1d18;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 顶部装饰 */
+        .top-decoration {
+            height: 20px;
+            background: linear-gradient(90deg, #8c1d18, #b22222, #8c1d18);
+            border-bottom: 2px solid #e8c4c2;
+        }
+
+        /* 头部样式 */
+        header {
+            position: relative;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="30" viewBox="0 0 200 30"><path d="M0,15 Q20,0 40,15 T80,15 Q60,30 40,15 T0,15" fill="%23f9f0e9" opacity="0.7"/></svg>') top repeat-x;
+            margin-bottom: -30px;
+        }
+
+        .title {
+            font-weight: bold;
+            font-size: 72px;
+            color: #b22222;
+            text-shadow: 3px 3px 5px rgba(140, 29, 24, 0.3);
+            letter-spacing: 10px;
+            position: relative;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .title::after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 10%;
+            width: 80%;
+            height: 4px;
+            background: linear-gradient(to right, transparent, #b22222, transparent);
+        }
+
+        .subtitle {
+            font-size: 1.4rem;
+            margin-top: 15px;
+            color: #5a0f0c;
+            font-style: italic;
+            letter-spacing: 2px;
+        }
+
+        /* 导航栏 */
+        nav {
+            background: linear-gradient(to right, #8c1d18, #b22222);
+            box-shadow: 0 4px 10px rgba(140, 29, 24, 0.3);
+        }
+
+        .navbar-dark .navbar-nav .nav-link {
+            color: white;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 16px 25px;
+        }
+
+        .navbar-dark .navbar-nav .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .navbar-dark .navbar-nav .nav-link::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 3px;
+            background-color: #ffd700;
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+
+        .navbar-dark .navbar-nav .nav-link:hover::after {
+            width: 80%;
+        }
+
+        /* 作品展示 */
+        .appreciate-section {
+            padding: 3rem 0;
+            background: linear-gradient(135deg, #f9f0e9 0%, #f5e3da 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .appreciate-section::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M20,50 Q35,30 50,50 Q65,70 80,50 Q95,30 80,50 Q65,70 50,50 Q35,30 20,50" fill="none" stroke="%23e8c4c2" stroke-width="0.5" opacity="0.3"/></svg>');
+            background-size: 200px;
+            opacity: 0.2;
+            z-index: 0;
+        }
+
+        /* 分类筛选 */
+        .category-filter {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 30px;
+            z-index: 1;
+            position: relative;
+        }
+
+        .category-btn {
+            background: white;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            border-radius: 30px;
+            padding: 8px 24px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            font-size: 1.05rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 3px 6px rgba(140, 29, 24, 0.1);
+        }
+
+        .category-btn:hover,
+        .category-btn.active {
+            background: var(--primary-color);
+            color: white;
+            background: #b22222;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 12px rgba(140, 29, 24, 0.2);
+        }
+
+        .category-btn.active::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70%;
+            height: 3px;
+            background: var(--accent-color);
+            border-radius: 2px;
+        }
+
+        /* 作品网格 */
+        .art-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 30px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 作品卡片 */
+        .art-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(140, 29, 24, 0.12);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .art-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 30px rgba(140, 29, 24, 0.2);
+        }
+
+        .art-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .art-image-wrapper {
+            overflow: hidden;
+            height: 260px;
+            position: relative;
+        }
+
+        .art-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .art-card:hover .art-image {
+            transform: scale(1.05);
+        }
+
+        .art-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, rgba(92, 15, 12, 0.7) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            display: flex;
+            align-items: flex-end;
+            padding: 20px;
+            color: white;
+        }
+
+        .art-card:hover .art-overlay {
+            opacity: 1;
+        }
+
+        .overlay-text {
+            transform: translateY(20px);
+            transition: transform 0.4s ease;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .art-card:hover .overlay-text {
+            transform: translateY(0);
+        }
+
+        .card-body {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-title {
+            font-family: 'Noto Serif SC', serif;
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .card-title::after {
+            content: "";
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 50px;
+            height: 2px;
+            background: var(--secondary-color);
+        }
+
+        .card-text {
+            color: #5a0f0c;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            flex-grow: 1;
+            margin-bottom: 15px;
+        }
+
+        .art-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #8c7371;
+            border-top: 1px dashed #e8c4c2;
+            padding-top: 15px;
+            margin-top: auto;
+        }
+
+        .author-link {
+            color: var(--secondary-color);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+
+        .author-link:hover {
+            color: var(--primary-color);
+            text-decoration: underline;
+        }
+
+        .author-link i {
+            margin-right: 5px;
+        }
+
+        /* 模态框优化 */
+        .modal-image {
+            width: 100%;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .modal-author {
+            background: var(--light-bg);
+        }
+
+        .modal-title {
+            font-family: 'Noto Serif SC', serif;
+            color: var(--primary-color);
+            font-weight: 700;
+            font-size: 1.8rem;
+        }
+
+        .modal-footer {
+            background: var(--light-bg);
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 992px) {
+            .art-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
+
+            .section-title {
+                font-size: 2.4rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .category-filter {
+                gap: 8px;
+            }
+
+            .category-btn {
+                padding: 6px 16px;
+                font-size: 0.95rem;
+            }
+
+            .art-grid {
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .section-subtitle {
+                font-size: 1rem;
+            }
+        }
+
+        /* 页脚样式 */
+        footer {
+            background: linear-gradient(to right, #5a0f0c, #8c1d18);
+            color: #f9f0e9;
+            margin-top: 30px;
+        }
+
+        .footer-title {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #ffd700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .footer-text {
+            font-size: 1.1rem;
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+
+        .copyright {
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 0.9rem;
+            color: #e8c4c2;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 992px) {
+            .title {
+                font-size: 3rem;
+                letter-spacing: 5px;
+            }
+
+            .subtitle {
+                font-size: 1.1rem;
+            }
+
+            .paper {
+                height: 300px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.2rem;
+            }
+
+            .navbar-dark .navbar-nav .nav-link {
+                padding: 10px 15px;
+            }
+
+            .paper {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid px-0">
+        <!-- 顶部装饰条 -->
+        <div class="top-decoration"></div>
+        <!-- 头部 -->
+        <header class="py-5 text-center">
+            <div class="header-content">
+                <h1 class="title display-3">一纸千华</h1>
+                <p class="subtitle lead">一剪一世界 · 一纸一乾坤</p>
+            </div>
+        </header>
+        <!-- 导航栏 -->
+        <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+            <div class="container">
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav mx-auto">
+                        <li class="nav-item active">
+                            <a class="nav-link" href="./index.html"><i class="fas fa-home mr-1"></i>首页</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./AI-generation.html"><i
+                                    class="fas fa-history mr-1"></i>AI剪纸生成</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./cut.html"><i class="fas fa-cut mr-1"></i>在线体验</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./appreciate.html"><i class="fas fa-image mr-1"></i>作品欣赏</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./teach.html"><i class="fas fa-video mr-1"></i>教学视频</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./about.html"><i class="fas fa-address-card mr-1"></i>关于我们</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <!-- 作品展示 -->
+        <section class="appreciate-section">
+            <div class="container">
+                <!-- 分类筛选 -->
+                <div class="category-filter">
+                    <a href="./appreciate.html" class="category-btn active">全部作品</a>
+                    <a href="./categories/people.html" class="category-btn">人物剪纸</a>
+                    <a href="./categories/animal.html" class="category-btn">动物剪纸</a>
+                    <a href="./categories/flower.html" class="category-btn">花卉剪纸</a>
+                    <a href="./categories/festival.html" class="category-btn">节日剪纸</a>
+                    <a href="./categories/folk.html" class="category-btn">民俗剪纸</a>
+                </div>
+
+                <div class="art-grid">
+                    <!-- 作品1 -->
+                    <div class="art-card" data-category="festival">
+                        <div class="art-image-wrapper">
+                            <img src="./images/轮播图/双喜临门.png" alt="双喜临门剪纸" class="art-image" data-bs-toggle="modal"
+                                data-bs-target="#imageModal" data-art-title="双喜临门" data-art-author="李秀芳"
+                                data-art-desc="传统婚礼剪纸，以双喜字为主题，配以鸳鸯、莲花等吉祥图案，寓意夫妻恩爱、幸福美满。">
+                            <div class="art-overlay">
+                                <div class="overlay-text">传统婚礼剪纸，以双喜字为主题，配以鸳鸯、莲花等吉祥图案，寓意夫妻恩爱、幸福美满。</div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">双喜临门</h5>
+                            <p class="card-text">传统婚礼剪纸，以双喜字为主题，配以鸳鸯、莲花等吉祥图案，寓意夫妻恩爱、幸福美满。</p>
+                            <div class="art-info">
+                                <a href="javascript:void(0)" class="author-link" data-bs-toggle="modal"
+                                    data-bs-target="#authorModal" data-author="李秀芳"
+                                    data-author-url="https://baike.baidu.com/item/%E6%9D%8E%E7%A7%80%E8%8A%B3/2980529?noadapt=1">
+                                    <i class="fas fa-user"></i> 李秀芳
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 作品2 -->
+                    <div class="art-card" data-category="animal">
+                        <div class="art-image-wrapper">
+                            <img src="./images/轮播图/十二生肖.jpg" alt="十二生肖剪纸" class="art-image" data-bs-toggle="modal"
+                                data-bs-target="#imageModal" data-art-title="十二生肖" data-art-author="王建国"
+                                data-art-desc="完整十二生肖剪纸作品，采用对称设计，线条流畅，形态生动，展现了传统剪纸艺术的精湛技艺。">
+                            <div class="art-overlay">
+                                <div class="overlay-text">完整十二生肖剪纸作品，采用对称设计，线条流畅，形态生动，展现了传统剪纸艺术的精湛技艺。</div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">十二生肖</h5>
+                            <p class="card-text">完整十二生肖剪纸作品，采用对称设计，线条流畅，形态生动，展现了传统剪纸艺术的精湛技艺。</p>
+                            <div class="art-info">
+                                <a href="javascript:void(0)" class="author-link" data-bs-toggle="modal"
+                                    data-bs-target="#authorModal" data-author="王建国">
+                                    <i class="fas fa-user"></i> 王建国
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 作品3 -->
+                    <div class="art-card" data-category="people">
+                        <div class="art-image-wrapper">
+                            <img src="./images/轮播图/福禄寿三星.jpg" alt="福禄寿三星" class="art-image" data-bs-toggle="modal"
+                                data-bs-target="#imageModal" data-art-title="福禄寿三星" data-art-author="张玉兰"
+                                data-art-desc="以福、禄、寿三位神仙为主题的剪纸作品，寓意吉祥如意，常用于春节装饰，表达对美好生活的祝愿。">
+                            <div class="art-overlay">
+                                <div class="overlay-text">以福、禄、寿三位神仙为主题的剪纸作品，寓意吉祥如意，常用于春节装饰，表达对美好生活的祝愿。</div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">福禄寿三星</h5>
+                            <p class="card-text">以福、禄、寿三位神仙为主题的剪纸作品，寓意吉祥如意，常用于春节装饰，表达对美好生活的祝愿。</p>
+                            <div class="art-info">
+                                <a href="javascript:void(0)" class="author-link" data-bs-toggle="modal"
+                                    data-bs-target="#authorModal" data-author="张玉兰">
+                                    <i class="fas fa-user"></i> 张玉兰
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 作品4 -->
+                    <div class="art-card" data-category="animal">
+                        <div class="art-image-wrapper">
+                            <img src="./images/轮播图/年年有余.png" alt="年年有余" class="art-image" data-bs-toggle="modal"
+                                data-bs-target="#imageModal" data-art-title="年年有余" data-art-author="陈明华"
+                                data-art-desc="鲤鱼与莲花组合的传统剪纸，象征年年有余、生活富足。作品采用阴阳刻结合技法，线条细腻流畅。">
+                            <div class="art-overlay">
+                                <div class="overlay-text">鲤鱼与莲花组合的传统剪纸，象征年年有余、生活富足。作品采用阴阳刻结合技法，线条细腻流畅。</div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">年年有余</h5>
+                            <p class="card-text">鲤鱼与莲花组合的传统剪纸，象征年年有余、生活富足。作品采用阴阳刻结合技法，线条细腻流畅。</p>
+                            <div class="art-info">
+                                <a href="javascript:void(0)" class="author-link" data-bs-toggle="modal"
+                                    data-bs-target="#authorModal" data-author="陈明华">
+                                    <i class="fas fa-user"></i> 陈明华
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 作品5 -->
+                    <div class="art-card" data-category="folk">
+                        <div class="art-image-wrapper">
+                            <img src="./images/轮播图/龙凤呈祥.jpg" alt="龙凤呈祥" class="art-image" data-bs-toggle="modal"
+                                data-bs-target="#imageModal" data-art-title="龙凤呈祥" data-art-author="赵金花"
+                                data-art-desc="龙与凤的传统吉祥图案剪纸，象征高贵与喜庆，常用于婚礼装饰。作品构图饱满，细节丰富，体现传统美学。">
+                            <div class="art-overlay">
+                                <div class="overlay-text">龙与凤的传统吉祥图案剪纸，象征高贵与喜庆，常用于婚礼装饰。作品构图饱满，细节丰富，体现传统美学。</div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">龙凤呈祥</h5>
+                            <p class="card-text">龙与凤的传统吉祥图案剪纸，象征高贵与喜庆，常用于婚礼装饰。作品构图饱满，细节丰富，体现传统美学。</p>
+                            <div class="art-info">
+                                <a href="javascript:void(0)" class="author-link" data-bs-toggle="modal"
+                                    data-bs-target="#authorModal" data-author="赵金花">
+                                    <i class="fas fa-user"></i> 赵金花
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 作品6 -->
+                    <div class="art-card" data-category="flower">
+                        <div class="art-image-wrapper">
+                            <img src="./images/轮播图/梅兰竹菊四君子.jpg" alt="梅兰竹菊四君子" class="art-image" data-bs-toggle="modal"
+                                data-bs-target="#imageModal" data-art-title="梅兰竹菊四君子" data-art-author="刘文华"
+                                data-art-desc="以梅、兰、竹、菊为主题的剪纸作品，象征高尚品格。四幅作品既独立成章，又相互呼应，展现文人雅趣。">
+                            <div class="art-overlay">
+                                <div class="overlay-text">以梅、兰、竹、菊为主题的剪纸作品，象征高尚品格。四幅作品既独立成章，又相互呼应，展现文人雅趣。</div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">梅兰竹菊四君子</h5>
+                            <p class="card-text">以梅、兰、竹、菊为主题的剪纸作品，象征高尚品格。四幅作品既独立成章，又相互呼应，展现文人雅趣。</p>
+                            <div class="art-info">
+                                <a href="javascript:void(0)" class="author-link" data-bs-toggle="modal"
+                                    data-bs-target="#authorModal" data-author="刘文华">
+                                    <i class="fas fa-user"></i> 刘文华
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 作品7 -->
+                    <div class="art-card" data-category="festival">
+                        <div class="art-image-wrapper">
+                            <img src="./images/轮播图/春节窗花.jpg" alt="春节窗花" class="art-image" data-bs-toggle="modal"
+                                data-bs-target="#imageModal" data-art-title="春节窗花" data-art-author="周梅香"
+                                data-art-desc="传统春节窗花剪纸，以福字为中心，环绕牡丹、祥云等吉祥图案，象征新春吉祥、富贵平安。">
+                            <div class="art-overlay">
+                                <div class="overlay-text">传统春节窗花剪纸，以福字为中心，环绕牡丹、祥云等吉祥图案，象征新春吉祥、富贵平安。</div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">春节窗花</h5>
+                            <p class="card-text">传统春节窗花剪纸，以福字为中心，环绕牡丹、祥云等吉祥图案，象征新春吉祥、富贵平安。</p>
+                            <div class="art-info">
+                                <a href="javascript:void(0)" class="author-link" data-bs-toggle="modal"
+                                    data-bs-target="#authorModal" data-author="周梅香">
+                                    <i class="fas fa-user"></i> 周梅香
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 作品8 -->
+                    <div class="art-card" data-category="animal">
+                        <div class="art-image-wrapper">
+                            <img src="./images/轮播图/孔雀开屏.jpg" alt="孔雀开屏" class="art-image" data-bs-toggle="modal"
+                                data-bs-target="#imageModal" data-art-title="孔雀开屏" data-art-author="吴明远"
+                                data-art-desc="孔雀开屏剪纸作品，展现孔雀雍容华贵的姿态，羽毛细节丰富，象征吉祥富贵、前程似锦。">
+                            <div class="art-overlay">
+                                <div class="overlay-text">孔雀开屏剪纸作品，展现孔雀雍容华贵的姿态，羽毛细节丰富，象征吉祥富贵、前程似锦。</div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">孔雀开屏</h5>
+                            <p class="card-text">孔雀开屏剪纸作品，展现孔雀雍容华贵的姿态，羽毛细节丰富，象征吉祥富贵、前程似锦。</p>
+                            <div class="art-info">
+                                <a href="javascript:void(0)" class="author-link" data-bs-toggle="modal"
+                                    data-bs-target="#authorModal" data-author="吴明远">
+                                    <i class="fas fa-user"></i> 吴明远
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 作品9 -->
+                    <div class="art-card" data-category="people">
+                        <div class="art-image-wrapper">
+                            <img src="./images/轮播图/红楼梦人物.jpg" alt="红楼梦人物" class="art-image" data-bs-toggle="modal"
+                                data-bs-target="#imageModal" data-art-title="红楼梦人物" data-art-author="郑晓红"
+                                data-art-desc="以红楼梦人物为主题的剪纸作品，精细刻画了林黛玉、贾宝玉等经典人物形象，展现古典文学之美。">
+                            <div class="art-overlay">
+                                <div class="overlay-text">以红楼梦人物为主题的剪纸作品，精细刻画了林黛玉、贾宝玉等经典人物形象，展现古典文学之美。</div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">红楼梦人物</h5>
+                            <p class="card-text">以红楼梦人物为主题的剪纸作品，精细刻画了林黛玉、贾宝玉等经典人物形象，展现古典文学之美。</p>
+                            <div class="art-info">
+                                <a href="javascript:void(0)" class="author-link" data-bs-toggle="modal"
+                                    data-bs-target="#authorModal" data-author="郑晓红">
+                                    <i class="fas fa-user"></i> 郑晓红
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- 图片模态框 -->
+        <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-body p-0">
+                        <img src="" alt="" class="modal-image" id="modalImage">
+                        <div class="modal-author p-3">
+                            <h5 id="modalTitle" class="mb-1"></h5>
+                            <p class="mb-0">作者: <a href="#" id="modalAuthorLink" class="author-link"></a></p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <p id="modalDescription" class="text-muted mb-0"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 作者信息模态框 -->
+        <div class="modal fade" id="authorModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="authorModalTitle">剪纸艺术家</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="text-center mb-4">
+                            <img src="./images/作品欣赏/李秀芳.webp" alt="艺术家照片" class="author-modal-img" id="authorImage">
+                            <!-- <div class="bg-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                                    style="width: 120px; height: 120px;">
+                                    <i class="fas fa-user fa-3x text-light"></i>
+                                </div> -->
+                        </div>
+                        <h4 id="authorName" class="text-center mb-3"></h4>
+                        <p id="authorBio">
+                            国家级非物质文化遗产传承人，从事剪纸艺术创作40余年，作品多次在国内外展出并获奖。擅长传统民俗题材剪纸，作品风格细腻生动，富有浓郁的地方特色。</p>
+                        <div class="d-grid gap-2">
+                            <a href="#" id="authorDetailLink" class="btn btn-primary">
+                                <i class="fas fa-external-link-alt me-2"></i>查看详细艺术家资料
+                            </a>
+                            <!-- <a href="#" id="authorWorksLink" class="btn btn-outline-primary">
+                                    <i class="fas fa-images me-2"></i>查看该艺术家所有作品
+                                </a> -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 底部 -->
+        <footer class="py-5">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-8 mx-auto text-center">
+                        <h3 class="footer-title">一纸千华 · 中华瑰宝</h3>
+                        <p class="footer-text">
+                            剪纸艺术是中国民间艺术的瑰宝，承载着中华民族深厚的文化底蕴和审美情趣。每一幅剪纸作品都是民间艺人智慧的结晶，是连接过去与未来的文化桥梁。
+                        </p>
+                        <p class="footer-text">让我们共同保护和传承这一非物质文化遗产，让剪纸艺术在新时代绽放更加绚丽的光彩。</p>
+                        <div class="copyright mt-4 pt-3">
+                            <p>© 2025 一纸千华 - 中国传统剪纸艺术传承网</p>
+                            <p>邮箱：contact@paper-art.cn | 电话：010-88889999</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+    </div>
+    <script>
+        // 图片模态框
+        const imageModal = document.getElementById('imageModal');
+        imageModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const imgSrc = button.getAttribute('src');
+            const title = button.getAttribute('data-art-title');
+            const author = button.getAttribute('data-art-author');
+            const desc = button.getAttribute('data-art-desc');
+
+            document.getElementById('modalImage').src = imgSrc;
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalAuthorLink').textContent = author;
+            document.getElementById('modalDescription').textContent = desc;
+        });
+
+        // 作者模态框
+        const authorModal = document.getElementById('authorModal');
+        authorModal.addEventListener('show.bs.modal', function (event) {
+            const link = event.relatedTarget;
+            const authorName = link.getAttribute('data-author');
+            const authorUrl = link.getAttribute('data-author-url');
+
+            document.getElementById('authorName').textContent = authorName;
+            const detailLink = document.getElementById('authorDetailLink');
+            if (authorUrl) {
+                detailLink.href = authorUrl;
+            } else {
+                detailLink.href = `https://baike.baidu.com/search?word=${encodeURIComponent(authorName)}`;
+            }
+
+            const worksList = link.getAttribute('data-works');
+            const worksArray = worksList.split(',');
+            const worksContainer = document.getElementById('worksList');
+            worksContainer.innerHTML = '';
+
+            worksArray.forEach(work => {
+                const workLink = document.createElement('a');
+                workLink.href = `/reception/html/works/${work}.html`;
+                workLink.textContent = work;
+                workLink.classList.add('btn', 'btn-link');
+                worksContainer.appendChild(workLink);
+            });
+        });
+
+
+        // 分类筛选功能
+        document.querySelectorAll('.category-btn').forEach(button => {
+            button.addEventListener('click', function () {
+                // 更新活动按钮
+                document.querySelectorAll('.category-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                this.classList.add('active');
+
+                const category = this.getAttribute('data-category');
+                const artCards = document.querySelectorAll('.art-card');
+
+                artCards.forEach(card => {
+                    if (category === 'all' || card.getAttribute('data-category') === category) {
+                        card.style.display = 'block';
+                        setTimeout(() => {
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                        }, 50);
+                    } else {
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(20px)';
+                        setTimeout(() => {
+                            card.style.display = 'none';
+                        }, 300);
+                    }
+                });
+            });
+        });
+
+        // 初始加载时触发筛选效果
+        window.addEventListener('load', function () {
+            const artCards = document.querySelectorAll('.art-card');
+            artCards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 100 + index * 100);
+            });
+        });
+    </script>
+</body>
+
+
+</html>

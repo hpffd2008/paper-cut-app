@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>剪纸生花 - 注册</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="./vue.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', 'STKaiti', sans-serif;
+        }
+
+        #app {
+            width: 1000px;
+        }
+
+        :root {
+            --primary-color: #8c1d18;
+            --secondary-color: #b22222;
+            --accent-color: #ffd700;
+            --light-bg: #f9f0e9;
+            --dark-text: #5a0f0c;
+            --border-color: #e8c4c2;
+            --error-color: #d9534f;
+            --success-color: #5cb85c;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--light-bg), #f5e3da);
+            color: var(--dark-text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 传统纹饰背景 */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                radial-gradient(circle, rgba(217, 167, 164, 0.1) 2px, transparent 3px),
+                repeating-linear-gradient(45deg, #e8c4c2, #e8c4c2 1px, transparent 1px, transparent 20px);
+            background-size: 60px 60px, 20px 20px;
+            opacity: 0.2;
+            z-index: -1;
+        }
+
+        /* 主容器 - 弹性布局 */
+        .register-container {
+            display: flex;
+            width: 100%;
+            max-width: 1000px;
+            min-height: 600px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(140, 29, 24, 0.15);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 左侧艺术展示区 - 弹性子项 */
+        .art-display {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .art-display::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><path d="M100,0 Q150,20 200,100 T100,200 Q50,180 0,100 T100,0Z" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></svg>');
+            background-size: 200px;
+            opacity: 0.3;
+        }
+
+        .logo-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 2;
+            margin-bottom: 30px;
+        }
+
+        .logo-title {
+            font-size: 2.8rem;
+            text-align: center;
+            margin-bottom: 12px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            letter-spacing: 2px;
+        }
+
+        .logo-subtitle {
+            font-size: 1.3rem;
+            text-align: center;
+            font-style: italic;
+            text-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .art-pattern {
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 15px 0;
+            position: relative;
+            z-index: 2;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .art-pattern::before {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50,0 C77.61,0 100,22.39 100,50 C100,77.61 77.61,100 50,100 C22.39,100 0,77.61 0,50 C0,22.39 22.39,0 50,0 Z" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1"/><path d="M20,50 Q35,30 50,50 T80,50" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1"/></svg>');
+            background-size: 100%;
+            animation: rotate 30s linear infinite;
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .pattern-center {
+            font-size: 4.5rem;
+            color: rgba(255, 255, 255, 0.2);
+            z-index: 1;
+        }
+
+        .art-description {
+            max-width: 450px;
+            text-align: center;
+            font-size: 1rem;
+            line-height: 1.7;
+            margin-top: 15px;
+            z-index: 2;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 右侧注册区域 - 弹性子项 */
+        .register-form-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 30px;
+            position: relative;
+        }
+
+        /* 剪纸装饰元素 */
+        .cutout-decoration {
+            position: absolute;
+            width: 130px;
+            height: 130px;
+            opacity: 0.1;
+            z-index: 0;
+        }
+
+        .decoration-1 {
+            top: 15px;
+            right: 15px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50,0 C77.61,0 100,22.39 100,50 C100,77.61 77.61,100 50,100 C22.39,100 0,77.61 0,50 C0,22.39 22.39,0 50,0 Z" fill="%23b22222"/></svg>');
+            background-size: contain;
+            transform: rotate(15deg);
+        }
+
+        .decoration-2 {
+            bottom: 15px;
+            left: 15px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M20,20 Q40,5 60,20 T100,20 Q85,40 100,60 T100,100 Q60,85 20,100 T0,100 Q5,60 0,20 T20,20Z" fill="%23b22222"/></svg>');
+            background-size: contain;
+            transform: rotate(-10deg);
+        }
+
+        .register-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .register-title {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 12px;
+            position: relative;
+            font-weight: bold;
+        }
+
+        .register-title::after {
+            content: "";
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px;
+            height: 3px;
+            background: var(--secondary-color);
+            border-radius: 3px;
+        }
+
+        .register-subtitle {
+            font-size: 1rem;
+            color: #7a4a47;
+            margin-top: 20px;
+        }
+
+        .register-form {
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 18px;
+            position: relative;
+        }
+
+        .form-label {
+            font-weight: bold;
+            color: var(--dark-text);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-label i {
+            margin-right: 8px;
+            color: var(--secondary-color);
+        }
+
+        .input-with-icon {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 12px;
+            color: var(--secondary-color);
+            font-size: 1.1rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 13px 13px 13px 40px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+            background: #fff9f9;
+        }
+
+        .form-control:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(178, 34, 34, 0.2);
+            outline: none;
+        }
+
+        .form-control.error {
+            border-color: var(--error-color);
+            animation: shake 0.5s cubic-bezier(.36, .07, .19, .97);
+        }
+
+        @keyframes shake {
+
+            10%,
+            90% {
+                transform: translateX(-1px);
+            }
+
+            20%,
+            80% {
+                transform: translateX(2px);
+            }
+
+            30%,
+            50%,
+            70% {
+                transform: translateX(-4px);
+            }
+
+            40%,
+            60% {
+                transform: translateX(4px);
+            }
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            cursor: pointer;
+            color: var(--secondary-color);
+            transition: all 0.3s;
+        }
+
+        .toggle-password:hover {
+            color: var(--primary-color);
+            transform: scale(1.1);
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: 0.8rem;
+            margin-top: 4px;
+            height: 18px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .password-strength {
+            height: 5px;
+            border-radius: 2.5px;
+            margin-top: 6px;
+            background-color: #e0e0e0;
+            overflow: hidden;
+        }
+
+        .strength-meter {
+            height: 100%;
+            width: 0;
+            transition: width 0.3s ease;
+        }
+
+        .strength-0 {
+            width: 20%;
+            background-color: #ff5252;
+        }
+
+        .strength-1 {
+            width: 40%;
+            background-color: #ff9800;
+        }
+
+        .strength-2 {
+            width: 60%;
+            background-color: #ffc107;
+        }
+
+        .strength-3 {
+            width: 80%;
+            background-color: #8bc34a;
+        }
+
+        .strength-4 {
+            width: 100%;
+            background-color: #4caf50;
+        }
+
+        .password-hints {
+            margin-top: 4px;
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        .terms-container {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 18px;
+        }
+
+        .terms-container input {
+            margin-top: 4px;
+            margin-right: 8px;
+        }
+
+        .terms-container label {
+            line-height: 1.5;
+            font-size: 0.9rem;
+        }
+
+        .terms-container a {
+            color: var(--secondary-color);
+            text-decoration: none;
+        }
+
+        .terms-container a:hover {
+            text-decoration: underline;
+        }
+
+        .register-button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(140, 29, 24, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .register-button::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+
+        .register-button:hover::after {
+            left: 100%;
+        }
+
+        .register-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(140, 29, 24, 0.4);
+        }
+
+        .register-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .register-button:disabled::after {
+            display: none;
+        }
+
+        .login-link {
+            text-align: center;
+            color: #7a4a47;
+            margin-top: 18px;
+        }
+
+        .login-link a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .login-link a i {
+            margin-right: 6px;
+            transition: transform 0.3s;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .login-link a:hover i {
+            transform: translateX(5px);
+        }
+
+        /* 通知样式 */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            transform: translateY(-20px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            animation: slideIn 0.5s forwards;
+        }
+
+        @keyframes slideIn {
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .notification.success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .notification.error {
+            background: var(--error-color);
+            color: white;
+        }
+
+        .notification i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 900px) {
+            .register-container {
+                flex-direction: column;
+                min-height: auto;
+            }
+
+            .art-display {
+                padding: 25px 15px;
+                display: none;
+            }
+
+            .register-form-container {
+                padding: 30px 20px;
+            }
+
+            .register-title {
+                font-size: 1.8rem;
+            }
+
+            .logo-title {
+                font-size: 2.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .art-description {
+                font-size: 0.95rem;
+            }
+
+            .register-title {
+                font-size: 1.6rem;
+            }
+
+            .form-control {
+                padding: 11px 11px 11px 38px;
+                font-size: 0.9rem;
+            }
+
+            .input-icon {
+                left: 10px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="register-container">
+            <!-- 左侧艺术展示区 -->
+            <div class="art-display">
+                <div class="logo-container">
+                    <h1 class="logo-title">一纸千华</h1>
+                    <p class="logo-subtitle">一剪一世界 · 一纸一乾坤</p>
+                </div>
+
+                <div class="art-pattern">
+                    <div class="pattern-center">
+                        <i class="fas fa-cut"></i>
+                    </div>
+                </div>
+
+                <p class="art-description">
+                    剪纸，中国最古老的民间艺术之一，承载着千年的文化记忆。以纸为媒，以剪为笔，
+                    在方寸之间展现万千世界。剪纸艺术不仅是装饰，更是中华文化的传承与表达。
+                </p>
+            </div>
+
+            <!-- 右侧注册区域 -->
+            <div class="register-form-container">
+                <!-- 剪纸装饰元素 -->
+                <div class="cutout-decoration decoration-1"></div>
+                <div class="cutout-decoration decoration-2"></div>
+
+                <div class="register-header">
+                    <h2 class="register-title">创建新账号</h2>
+                    <p class="register-subtitle">加入剪纸艺术社区，开启创作之旅</p>
+                </div>
+
+                <form class="register-form" @submit.prevent="submitForm">
+                    <div class="form-group">
+                        <label for="username" class="form-label">
+                            <i class="fas fa-user"></i>用户名
+                        </label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-user input-icon"></i>
+                            <input type="text" id="username" class="form-control" :class="{'error': errors.username}"
+                                v-model="formData.username" placeholder="请输入用户名" @blur="validateUsername">
+                        </div>
+                        <div class="error-message">{{ errors.username }}</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email" class="form-label">
+                            <i class="fas fa-envelope"></i>电子邮箱
+                        </label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-envelope input-icon"></i>
+                            <input type="email" id="email" class="form-control" :class="{'error': errors.email}"
+                                v-model="formData.email" placeholder="请输入邮箱" @blur="validateEmail">
+                        </div>
+                        <div class="error-message">{{ errors.email }}</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-lock"></i>密码
+                        </label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-lock input-icon"></i>
+                            <input :type="showPassword ? 'text' : 'password'" id="password" class="form-control"
+                                :class="{'error': errors.password}" v-model="formData.password" placeholder="请输入密码"
+                                @input="checkPasswordStrength" @blur="validatePassword">
+                            <span class="toggle-password" @click="showPassword = !showPassword">
+                                <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                            </span>
+                        </div>
+                        <div class="error-message">{{ errors.password }}</div>
+                        <div class="password-strength">
+                            <div class="strength-meter" :class="'strength-' + passwordStrength"></div>
+                        </div>
+                        <div class="password-hints">
+                            密码需包含大小写字母和数字，至少8位
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirm-password" class="form-label">
+                            <i class="fas fa-lock"></i>确认密码
+                        </label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-lock input-icon"></i>
+                            <input :type="showConfirmPassword ? 'text' : 'password'" id="confirm-password"
+                                class="form-control" :class="{'error': errors.confirmPassword}"
+                                v-model="formData.confirmPassword" placeholder="请再次输入密码"
+                                @blur="validateConfirmPassword">
+                            <span class="toggle-password" @click="showConfirmPassword = !showConfirmPassword">
+                                <i :class="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                            </span>
+                        </div>
+                        <div class="error-message">{{ errors.confirmPassword }}</div>
+                    </div>
+
+                    <div class="terms-container">
+                        <input type="checkbox" id="terms" v-model="formData.agreeTerms">
+                        <label for="terms">
+                            我同意<a href="#">服务条款</a>和<a href="#">隐私政策</a>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="register-button" :disabled="isSubmitting">
+                        <i v-if="isSubmitting" class="fas fa-spinner fa-spin"></i>
+                        {{ isSubmitting ? '注册中...' : '注册账号' }}
+                    </button>
+
+                    <p class="login-link">
+                        已有账号? <a href="./login.html"><i class="fas fa-sign-in-alt"></i>返回登录</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+
+        <!-- 通知容器 -->
+        <div id="notification-container"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            new Vue({
+                el: '#app',
+                data: {
+                    formData: {
+                        username: '',
+                        email: '',
+                        password: '',
+                        confirmPassword: '',
+                        agreeTerms: false
+                    },
+                    errors: {
+                        username: '',
+                        email: '',
+                        password: '',
+                        confirmPassword: ''
+                    },
+                    passwordStrength: 0,
+                    showPassword: false,
+                    showConfirmPassword: false,
+                    isSubmitting: false
+                },
+                methods: {
+                    togglePassword() {
+                        this.showPassword = !this.showPassword;
+                    },
+                    toggleConfirmPassword() {
+                        this.showConfirmPassword = !this.showConfirmPassword;
+                    },
+
+                    // 验证用户名
+                    validateUsername() {
+                        const usernameRegex = /^[a-zA-Z\u4e00-\u9fa5][\w\u4e00-\u9fa5]{3,19}$/;
+
+                        if (!this.formData.username) {
+                            this.errors.username = '请输入用户名';
+                        } else if (!usernameRegex.test(this.formData.username)) {
+                            this.errors.username = '用户名需4-20个字符（字母、汉字、数字、下划线），不能以数字开头';
+                        } else {
+                            this.errors.username = '';
+                        }
+                    },
+
+                    // 验证邮箱
+                    validateEmail() {
+                        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+                        if (!this.formData.email) {
+                            this.errors.email = '请输入邮箱';
+                        } else if (!emailRegex.test(this.formData.email)) {
+                            this.errors.email = '请输入有效的邮箱地址';
+                        } else {
+                            this.errors.email = '';
+                        }
+                    },
+
+                    // 验证密码
+                    validatePassword() {
+                        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/;
+
+                        if (!this.formData.password) {
+                            this.errors.password = '请输入密码';
+                        } else if (!passwordRegex.test(this.formData.password)) {
+                            this.errors.password = '密码需包含大小写字母和数字，至少8位';
+                        } else {
+                            this.errors.password = '';
+                        }
+                    },
+
+                    // 验证确认密码
+                    validateConfirmPassword() {
+                        if (!this.formData.confirmPassword) {
+                            this.errors.confirmPassword = '请确认密码';
+                        } else if (this.formData.password !== this.formData.confirmPassword) {
+                            this.errors.confirmPassword = '两次输入的密码不一致';
+                        } else {
+                            this.errors.confirmPassword = '';
+                        }
+                    },
+
+                    // 检查密码强度
+                    checkPasswordStrength() {
+                        let strength = 0;
+                        const password = this.formData.password;
+
+                        if (password.length >= 8) strength++;
+                        if (/[a-z]/.test(password)) strength++;
+                        if (/[A-Z]/.test(password)) strength++;
+                        if (/\d/.test(password)) strength++;
+
+                        // 限制在0-4之间
+                        this.passwordStrength = Math.min(strength, 4);
+
+                        // 同时验证密码
+                        this.validatePassword();
+                    },
+
+                    // 表单验证
+                    validateForm() {
+                        this.validateUsername();
+                        this.validateEmail();
+                        this.validatePassword();
+                        this.validateConfirmPassword();
+
+                        // 检查是否有错误
+                        return !(this.errors.username ||
+                            this.errors.email ||
+                            this.errors.password ||
+                            this.errors.confirmPassword);
+                    },
+
+                    // 提交表单
+                    submitForm() {
+                        // 验证表单
+                        const isValid = this.validateForm();
+
+                        // 检查条款
+                        if (!this.formData.agreeTerms) {
+                            this.showNotification('请同意服务条款和隐私政策', 'error');
+                            return;
+                        }
+
+                        if (!isValid) return;
+
+                        // 设置提交状态
+                        this.isSubmitting = true;
+
+                        // 模拟注册请求
+                        setTimeout(() => {
+                            // 保存密码到 localStorage
+                            localStorage.setItem("userPassword", this.formData.password);
+
+                            this.isSubmitting = false;
+                            this.showNotification('注册成功！请登录您的账号', 'success');
+
+                            // 在实际应用中，这里会跳转到登录页
+                            setTimeout(() => {
+                                window.location.href = 'login.html';
+                            }, 1500);
+                        }, 2000);
+                    },
+
+                    // 显示通知
+                    showNotification(message, type) {
+                        const notificationContainer = document.getElementById('notification-container');
+
+                        // 移除现有通知
+                        while (notificationContainer.firstChild) {
+                            notificationContainer.removeChild(notificationContainer.firstChild);
+                        }
+
+                        const notification = document.createElement('div');
+                        notification.className = `notification ${type}`;
+                        notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                <span>${message}</span>
+            `;
+
+                        notificationContainer.appendChild(notification);
+
+                        // 3秒后移除通知
+                        setTimeout(() => {
+                            notification.style.opacity = '0';
+                            notification.style.transform = 'translateY(-20px)';
+                            setTimeout(() => {
+                                notificationContainer.removeChild(notification);
+                            }, 300);
+                        }, 3000);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

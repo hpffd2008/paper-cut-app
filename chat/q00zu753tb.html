@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI剪纸生成 - 剪纸生花</title>
+    <!-- 使用CDN引入Bootstrap 4.6.2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-red: #c62828;
+            --dark-red: #8c1d18;
+            --gold: #ffd700;
+            --paper: #fff5e6;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'STKaiti', sans-serif;
+            background: linear-gradient(135deg, #f9f0e9, #f5e3da);
+            color: #8c1d18;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 顶部装饰 */
+        .top-decoration {
+            height: 20px;
+            background: linear-gradient(90deg, #8c1d18, #b22222, #8c1d18);
+            border-bottom: 2px solid #e8c4c2;
+        }
+
+        /* 头部样式 */
+        header {
+            position: relative;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="30" viewBox="0 0 200 30"><path d="M0,15 Q20,0 40,15 T80,15 Q60,30 40,15 T0,15" fill="%23f9f0e9" opacity="0.7"/></svg>') top repeat-x;
+            margin-bottom: -30px;
+        }
+
+        .title {
+            font-weight: bold;
+            color: #b22222;
+            text-shadow: 3px 3px 5px rgba(140, 29, 24, 0.3);
+            letter-spacing: 10px;
+            position: relative;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .title::after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 10%;
+            width: 80%;
+            height: 4px;
+            background: linear-gradient(to right, transparent, #b22222, transparent);
+        }
+
+        .subtitle {
+            font-size: 1.4rem;
+            margin-top: 15px;
+            color: #5a0f0c;
+            font-style: italic;
+            letter-spacing: 2px;
+        }
+
+        /* 导航栏 */
+        nav {
+            background: linear-gradient(to right, #8c1d18, #b22222);
+            box-shadow: 0 4px 10px rgba(140, 29, 24, 0.3);
+        }
+
+        .navbar-dark .navbar-nav .nav-link {
+            color: white;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 16px 25px;
+        }
+
+        .navbar-dark .navbar-nav .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .navbar-dark .navbar-nav .nav-link::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 3px;
+            background-color: #ffd700;
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+
+        .navbar-dark .navbar-nav .nav-link:hover::after {
+            width: 80%;
+        }
+
+        /* 中间内容 */
+        .ai-container {
+            padding: 30px 20px;
+            max-width: 1400px;
+            margin: 30px auto 0;
+        }
+
+        .control-panel {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e8d5c4;
+            height: 100%;
+        }
+
+        .preview-area {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e8d5c4;
+            height: 100%;
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card-title {
+            color: var(--dark-red);
+            font-weight: 700;
+            border-bottom: 2px solid var(--gold);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .card-title:after {
+            content: "";
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 80px;
+            height: 2px;
+            background: var(--primary-red);
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--dark-red);
+        }
+
+        .form-control,
+        .form-select {
+            border: 2px solid #e8d5c4;
+            border-radius: 8px;
+            padding: 10px 15px;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--primary-red);
+            box-shadow: 0 0 0 0.25rem rgba(198, 40, 40, 0.25);
+        }
+
+        .form-range {
+            width: 100%;
+        }
+
+        .btn-generate {
+            background: linear-gradient(135deg, var(--primary-red) 0%, var(--dark-red) 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(198, 40, 40, 0.3);
+            width: 100%;
+            margin-top: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(198, 40, 40, 0.4);
+        }
+
+        .btn-generate:after {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -60%;
+            width: 20px;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(25deg);
+            transition: all 0.8s;
+        }
+
+        .btn-generate:hover:after {
+            left: 120%;
+        }
+
+        .preview-placeholder {
+            width: 100%;
+            max-width: 400px;
+            height: 400px;
+            background-color: var(--paper);
+            border: 2px dashed #d1bda6;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #a1887f;
+            transition: all 0.3s;
+        }
+
+        .preview-placeholder i {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            color: #d1bda6;
+        }
+
+        .preview-placeholder:hover {
+            border-color: var(--primary-red);
+            background-color: #fff9f0;
+        }
+
+        .style-option {
+            border: 2px solid #e8d5c4;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+            background: white;
+            height: 100%;
+        }
+
+        .style-option:hover {
+            border-color: var(--primary-red);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .style-option.active {
+            border-color: var(--primary-red);
+            background: rgba(198, 40, 40, 0.05);
+            box-shadow: 0 5px 15px rgba(198, 40, 40, 0.1);
+        }
+
+        .style-option i {
+            font-size: 2.5rem;
+            color: var(--primary-red);
+            margin-bottom: 10px;
+        }
+
+        .history-section {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e8d5c4;
+            margin-top: 30px;
+            position: relative;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .history-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .history-btn {
+            background: linear-gradient(to right, #8c1d18, #b22222);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 12px;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .history-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 8px rgba(140, 29, 24, 0.3);
+        }
+
+        .history-item {
+            border: 2px solid #e8d5c4;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s;
+            height: 100%;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .history-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-red);
+        }
+
+        .history-img {
+            height: 180px;
+            background-color: var(--paper);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 2px solid #e8d5c4;
+        }
+
+        .history-img img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .history-img i {
+            font-size: 4rem;
+            color: #d1bda6;
+        }
+
+        .history-content {
+            padding: 15px;
+        }
+
+        .history-title {
+            font-weight: 700;
+            color: var(--dark-red);
+            margin-bottom: 5px;
+            font-size: 1.1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-desc {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .history-delete {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #c62828;
+            opacity: 0;
+            transition: all 0.3s;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .history-item:hover .history-delete {
+            opacity: 1;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.active {
+            border: 3px solid #fff;
+            box-shadow: 0 0 0 2px var(--primary-red);
+        }
+
+        .generating-animation {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(198, 40, 40, 0.2);
+            border-top: 5px solid var(--primary-red);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .result-image {
+            max-width: 100%;
+            max-height: 400px;
+            display: none;
+            border: 1px solid #e8d5c4;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .action-buttons {
+            display: none;
+            margin-top: 20px;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .action-btn {
+            background: white;
+            border: 2px solid var(--primary-red);
+            color: var(--primary-red);
+            border-radius: 50px;
+            padding: 8px 20px;
+            font-weight: 600;
+            transition: all 0.3s;
+            min-width: 120px;
+        }
+
+        .action-btn:hover {
+            background: var(--primary-red);
+            color: white;
+        }
+
+        /* 页脚样式 */
+        footer {
+            background: linear-gradient(to right, #5a0f0c, #8c1d18);
+            color: #f9f0e9;
+            margin-top: 50px;
+            padding-top: 40px;
+        }
+
+        .footer-title {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #ffd700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .footer-text {
+            font-size: 1.1rem;
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+
+        .copyright {
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 0.9rem;
+            color: #e8c4c2;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 992px) {
+            .title {
+                font-size: 3rem;
+                letter-spacing: 5px;
+            }
+
+            .subtitle {
+                font-size: 1.1rem;
+            }
+
+            .preview-placeholder {
+                height: 300px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.2rem;
+            }
+
+            .navbar-dark .navbar-nav .nav-link {
+                padding: 10px 15px;
+            }
+
+            .preview-placeholder {
+                height: 250px;
+            }
+
+            .history-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .history-actions {
+                align-self: flex-end;
+            }
+        }
+
+        /* 纸张纹理效果 */
+        .paper-texture {
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h100v100H0z' fill='none'/%3E%3Cpath d='M5 5h90v90H5z' stroke='%23d1bda6' stroke-width='0.5' fill='none' stroke-dasharray='2,2'/%3E%3C/svg%3E");
+        }
+
+        /* 剪纸效果 */
+        .papercut-effect {
+            filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.15));
+            transition: all 0.3s ease;
+        }
+
+        .papercut-effect:hover {
+            filter: drop-shadow(0 8px 15px rgba(0, 0, 0, 0.2));
+            transform: scale(1.02);
+        }
+
+        /* 复杂度指示器 */
+        .complexity-indicator {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .complexity-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #e8d5c4;
+            margin: 0 3px;
+        }
+
+        .complexity-dot.active {
+            background-color: var(--primary-red);
+        }
+
+        /* 模态框样式 */
+        .modal-content {
+            border-radius: 12px;
+            border: 2px solid var(--primary-red);
+        }
+
+        .modal-header {
+            background-color: var(--primary-red);
+            color: white;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+            padding: 15px 20px;
+        }
+
+        .modal-title {
+            font-weight: 700;
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .modal-footer {
+            border-top: 1px solid #e8d5c4;
+            padding: 15px;
+        }
+
+        /* 删除确认弹窗 */
+        .delete-confirm {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1050;
+            display: none;
+        }
+
+        .confirm-box {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .confirm-title {
+            font-size: 1.5rem;
+            color: var(--dark-red);
+            margin-bottom: 20px;
+        }
+
+        .confirm-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .confirm-btn {
+            padding: 10px 25px;
+            border-radius: 50px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .confirm-delete {
+            background: linear-gradient(135deg, var(--primary-red), var(--dark-red));
+            color: white;
+        }
+
+        .confirm-cancel {
+            background: white;
+            border: 2px solid var(--primary-red);
+            color: var(--primary-red);
+        }
+
+        .confirm-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 空历史记录提示 */
+        .empty-history {
+            text-align: center;
+            padding: 40px 20px;
+            color: #8c1d18;
+            background: rgba(255, 245, 230, 0.5);
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .empty-history i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: #d1bda6;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid px-0">
+        <!-- 顶部装饰条 -->
+        <div class="top-decoration"></div>
+        <!-- 头部 -->
+        <header class="py-5 text-center">
+            <div class="header-content">
+                <h1 class="title display-3">一纸千华</h1>
+                <p class="subtitle lead">一剪一世界 · 一纸一乾坤</p>
+            </div>
+        </header>
+        <!-- 导航栏 -->
+        <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+            <div class="container">
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav mx-auto">
+                        <li class="nav-item active">
+                            <a class="nav-link" href="./index.html"><i class="fas fa-home mr-1"></i>首页</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./AI-generation.html"><i class="fas fa-history mr-1"></i>AI剪纸生成</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./cut.html"><i class="fas fa-cut mr-1"></i>在线体验</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./appreciate.html"><i class="fas fa-image mr-1"></i>作品欣赏</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./teach.html"><i class="fas fa-video mr-1"></i>教学视频</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./about.html"><i class="fas fa-address-card mr-1"></i>关于我们</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        </div>
+
+        <!-- AI功能主区域 -->
+        <div class="ai-container">
+            <div class="row">
+                <!-- 左侧控制面板 -->
+                <div class="col-lg-5 mb-4 mb-lg-0">
+                    <div class="control-panel paper-texture">
+                        <h3 class="card-title">AI剪纸生成器</h3>
+
+                        <div class="mb-4">
+                            <label class="form-label">描述您想要的剪纸图案</label>
+                            <textarea class="form-control" rows="4" placeholder="例如：一对鸳鸯在荷花池中戏水，背景有柳树和月亮..."
+                                id="promptInput">春花秋月</textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">选择剪纸风格</label>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <div class="style-option active" data-style="northern">
+                                        <i class="fas fa-mountain"></i>
+                                        <div>北方风格</div>
+                                        <small>粗犷豪放</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="style-option" data-style="southern">
+                                        <i class="fas fa-water"></i>
+                                        <div>南方风格</div>
+                                        <small>细腻婉约</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="style-option" data-style="modern">
+                                        <i class="fas fa-palette"></i>
+                                        <div>现代风格</div>
+                                        <small>创新融合</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">选择纸张颜色</label>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <div class="color-option active" style="background-color: #c62828;"
+                                    data-color="#c62828"></div>
+                                <div class="color-option" style="background-color: #000;" data-color="#000"></div>
+                                <div class="color-option" style="background-color: #4CAF50;" data-color="#4CAF50"></div>
+                                <div class="color-option" style="background-color: #2196F3;" data-color="#2196F3"></div>
+                                <div class="color-option" style="background-color: #FF9800;" data-color="#FF9800"></div>
+                                <div class="color-option" style="background-color: #9C27B0;" data-color="#9C27B0"></div>
+                                <div class="color-option" style="background-color: #E91E63;" data-color="#E91E63"></div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">复杂度设置</label>
+                            <input type="range" class="form-range" min="1" max="5" value="3" id="complexityRange">
+                            <div class="complexity-indicator">
+                                <div class="complexity-dot" data-level="1"></div>
+                                <div class="complexity-dot" data-level="2"></div>
+                                <div class="complexity-dot active" data-level="3"></div>
+                                <div class="complexity-dot" data-level="4"></div>
+                                <div class="complexity-dot" data-level="5"></div>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-generate" id="generateBtn">生成剪纸图案</button>
+                    </div>
+                </div>
+
+                <!-- 右侧预览区域 -->
+                <div class="col-lg-7">
+                    <div class="preview-area paper-texture">
+                        <h3 class="card-title text-center"><i class="fas fa-eye me-2"></i>剪纸预览</h3>
+
+                        <!-- 初始占位符 -->
+                        <div class="preview-placeholder" id="previewPlaceholder">
+                            <i class="fas fa-cut"></i>
+                            <h4>等待生成剪纸图案</h4>
+                            <p class="text-center">描述您想要的剪纸图案，然后点击"生成"按钮</p>
+                        </div>
+
+                        <!-- 生成中动画 -->
+                        <div class="generating-animation" id="generatingAnimation">
+                            <div class="spinner"></div>
+                            <h4>AI正在创作您的剪纸...</h4>
+                            <p>这通常需要10-30秒，请耐心等待</p>
+                        </div>
+
+                        <!-- 结果图像 -->
+                        <img src="" class="result-image papercut-effect" id="resultImage" alt="生成的剪纸图案">
+
+                        <!-- 操作按钮 -->
+                        <div class="action-buttons d-flex" id="actionButtons">
+                            <button class="action-btn" id="downloadBtn"><i class="fas fa-download me-2"></i>下载</button>
+                            <button class="action-btn" id="editBtn"><i class="fas fa-edit me-2"></i>编辑</button>
+                            <button class="action-btn" id="shareBtn"><i class="fas fa-share-alt me-2"></i>分享</button>
+                            <button class="action-btn" id="regenerateBtn"><i class="fas fa-redo me-2"></i>重新生成</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 历史记录区域 -->
+            <div class="history-section">
+                <div class="history-header">
+                    <h3 class="card-title"><i class="fas fa-history me-2"></i>历史生成作品</h3>
+                    <div class="history-actions">
+                        <button class="history-btn" id="clearHistoryBtn"><i class="fas fa-trash me-1"></i>清空历史</button>
+                    </div>
+                </div>
+                <div class="row" id="historyContainer">
+                    <div class="col-md-4 mb-4">
+                        <div class="history-item">
+                            <button class="history-delete"><i class="fas fa-times"></i></button>
+                            <div class="history-img">
+                                <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'><rect width='400' height='400' fill='%23fff5e6'/><path d='M100,150 Q200,50 300,150 T500,150' stroke='%23c62828' stroke-width='8' fill='none'/><circle cx='200' cy='100' r='30' fill='%23c62828'/><path d='M150,250 Q200,150 250,250 T350,250' stroke='%23c62828' stroke-width='8' fill='none'/><path d='M180,300 L220,300 L200,350 Z' fill='%23c62828'/></svg>"
+                                    alt="双龙戏珠">
+                            </div>
+                            <div class="history-content">
+                                <div class="history-title">双龙戏珠</div>
+                                <div class="history-desc">北方风格 · 复杂度: 高</div>
+                                <small class="text-muted">2025-07-01 生成</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="history-item">
+                            <button class="history-delete"><i class="fas fa-times"></i></button>
+                            <div class="history-img">
+                                <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'><rect width='400' height='400' fill='%23fff5e6'/><path d='M100,250 C150,150 250,150 300,250' stroke='%234CAF50' stroke-width='8' fill='none'/><circle cx='200' cy='150' r='40' fill='%234CAF50'/><path d='M180,280 L220,280 L200,330 Z' fill='%234CAF50'/><circle cx='150' cy='200' r='15' fill='%234CAF50'/><circle cx='250' cy='200' r='15' fill='%234CAF50'/></svg>"
+                                    alt="连年有余">
+                            </div>
+                            <div class="history-content">
+                                <div class="history-title">连年有余</div>
+                                <div class="history-desc">南方风格 · 复杂度: 中</div>
+                                <small class="text-muted">2025-07-01 生成</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="history-item">
+                            <button class="history-delete"><i class="fas fa-times"></i></button>
+                            <div class="history-img">
+                                <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'><rect width='400' height='400' fill='%23fff5e6'/><path d='M150,150 Q200,100 250,150 T350,150' stroke='%232196F3' stroke-width='8' fill='none'/><path d='M120,250 Q200,180 280,250' stroke='%232196F3' stroke-width='8' fill='none'/><circle cx='200' cy='200' r='25' fill='%232196F3'/><path d='M180,300 L220,300 L200,350 Z' fill='%232196F3'/></svg>"
+                                    alt="喜鹊登梅">
+                            </div>
+                            <div class="history-content">
+                                <div class="history-title">喜鹊登梅</div>
+                                <div class="history-desc">现代风格 · 复杂度: 低</div>
+                                <small class="text-muted">2023-07-01 生成</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部 -->
+        <footer class="py-5">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-8 mx-auto text-center">
+                        <h3 class="footer-title">一纸千华 · 中华瑰宝</h3>
+                        <p class="footer-text">剪纸艺术是中国民间艺术的瑰宝，承载着中华民族深厚的文化底蕴和审美情趣。每一幅剪纸作品都是民间艺人智慧的结晶，是连接过去与未来的文化桥梁。
+                        </p>
+                        <p class="footer-text">让我们共同保护和传承这一非物质文化遗产，让剪纸艺术在新时代绽放更加绚丽的光彩。</p>
+                        <div class="copyright mt-4 pt-3">
+                            <p>© 2025 一纸千华 - 中国传统剪纸艺术传承网</p>
+                            <p>邮箱：contact@paper-art.cn | 电话：010-88889999</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 编辑模态框 -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-edit me-2"></i>编辑剪纸图案</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>剪纸图案编辑功能正在开发中，即将推出！</p>
+                    <p>您可以使用以下专业工具进行编辑：</p>
+                    <ul class="text-start">
+                        <li>Adobe Illustrator - 专业的矢量图形编辑工具</li>
+                        <li>Inkscape - 免费开源的矢量图形编辑器</li>
+                        <li>CorelDRAW - 功能强大的图形设计软件</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认弹窗 -->
+    <div class="delete-confirm" id="deleteConfirm">
+        <div class="confirm-box">
+            <h3 class="confirm-title"><i class="fas fa-exclamation-triangle me-2"></i>确认删除</h3>
+            <p>您确定要删除这个历史记录吗？此操作不可恢复。</p>
+            <div class="confirm-buttons">
+                <button class="confirm-btn confirm-delete" id="confirmDelete">确认删除</button>
+                <button class="confirm-btn confirm-cancel" id="confirmCancel">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入jQuery和Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // 初始化变量
+            let selectedStyle = 'northern';
+            let selectedColor = '#c62828';
+            let complexityLevel = 3;
+            let currentSVG = '';
+            let itemToDelete = null;
+
+            // 风格选择
+            const styleOptions = document.querySelectorAll('.style-option');
+            styleOptions.forEach(option => {
+                option.addEventListener('click', function () {
+                    styleOptions.forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    selectedStyle = this.getAttribute('data-style');
+                });
+            });
+
+            // 颜色选择
+            const colorOptions = document.querySelectorAll('.color-option');
+            colorOptions.forEach(option => {
+                option.addEventListener('click', function () {
+                    colorOptions.forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    selectedColor = this.getAttribute('data-color');
+                });
+            });
+
+            // 复杂度设置
+            const complexityRange = document.getElementById('complexityRange');
+            const complexityDots = document.querySelectorAll('.complexity-dot');
+
+            complexityRange.addEventListener('input', function () {
+                complexityLevel = parseInt(this.value);
+                updateComplexityDots(complexityLevel);
+            });
+
+            complexityDots.forEach(dot => {
+                dot.addEventListener('click', function () {
+                    const level = parseInt(this.getAttribute('data-level'));
+                    complexityRange.value = level;
+                    complexityLevel = level;
+                    updateComplexityDots(level);
+                });
+            });
+
+            function updateComplexityDots(level) {
+                complexityDots.forEach(dot => {
+                    const dotLevel = parseInt(dot.getAttribute('data-level'));
+                    dot.classList.toggle('active', dotLevel === level);
+                });
+            }
+
+            // 生成按钮
+            const generateBtn = document.getElementById('generateBtn');
+            const regenerateBtn = document.getElementById('regenerateBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const editBtn = document.getElementById('editBtn');
+            const shareBtn = document.getElementById('shareBtn');
+            const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+            const confirmDeleteBtn = document.getElementById('confirmDelete');
+            const confirmCancelBtn = document.getElementById('confirmCancel');
+            const deleteConfirm = document.getElementById('deleteConfirm');
+
+            const previewPlaceholder = document.getElementById('previewPlaceholder');
+            const generatingAnimation = document.getElementById('generatingAnimation');
+            const resultImage = document.getElementById('resultImage');
+            const actionButtons = document.getElementById('actionButtons');
+            const promptInput = document.getElementById('promptInput');
+            const historyContainer = document.getElementById('historyContainer');
+
+            generateBtn.addEventListener('click', generateArtwork);
+            regenerateBtn.addEventListener('click', generateArtwork);
+
+            // 下载功能
+            downloadBtn.addEventListener('click', function () {
+                if (!currentSVG) return;
+
+                const prompt = promptInput.value || '剪纸图案';
+                const filename = `${prompt.replace(/\s+/g, '_')}_${selectedStyle}_剪纸.svg`;
+
+                const blob = new Blob([currentSVG], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+
+            // 编辑功能
+            editBtn.addEventListener('click', function () {
+                $('#editModal').modal('show');
+            });
+
+            // 分享功能
+            shareBtn.addEventListener('click', function () {
+                if (!currentSVG) return;
+
+                const prompt = promptInput.value || '剪纸图案';
+
+                // 使用Web Share API（如果可用）
+                if (navigator.share) {
+                    navigator.share({
+                        title: '我生成的剪纸作品',
+                        text: `看看我使用剪纸生花生成的"${prompt}"剪纸作品！`,
+                        url: window.location.href
+                    })
+                        .catch(error => console.log('分享失败:', error));
+                } else {
+                    // 如果不支持Web Share API，则使用传统方式
+                    alert('分享功能需要现代浏览器支持！\n您可以使用浏览器的分享功能或下载后分享。');
+                }
+            });
+
+            // 历史记录点击
+            document.querySelectorAll('.history-item').forEach(item => {
+                item.addEventListener('click', function (e) {
+                    // 如果点击的是删除按钮，则不预览
+                    if (e.target.closest('.history-delete')) {
+                        return;
+                    }
+
+                    const img = this.querySelector('img');
+                    if (img) {
+                        const src = img.getAttribute('src');
+                        previewPlaceholder.style.display = 'none';
+                        generatingAnimation.style.display = 'none';
+                        resultImage.style.display = 'block';
+                        actionButtons.style.display = 'flex';
+                        resultImage.src = src;
+                        currentSVG = decodeURIComponent(src.split(',')[1]);
+                    }
+                });
+            });
+
+            // 删除历史记录功能
+            document.querySelectorAll('.history-delete').forEach(btn => {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    itemToDelete = this.closest('.history-item').parentElement;
+                    deleteConfirm.style.display = 'flex';
+                });
+            });
+
+            // 确认删除
+            confirmDeleteBtn.addEventListener('click', function () {
+                if (itemToDelete) {
+                    if (itemToDelete === 'all') {
+                        // 清空全部历史记录
+                        historyContainer.innerHTML = '';
+                        checkEmptyHistory();
+                    } else {
+                        // 删除单个历史记录
+                        itemToDelete.remove();
+                        checkEmptyHistory();
+                    }
+                    deleteConfirm.style.display = 'none';
+                    itemToDelete = null;
+                    confirmDeleteBtn.textContent = '确认删除';
+                }
+            });
+
+            // 取消删除
+            confirmCancelBtn.addEventListener('click', function () {
+                deleteConfirm.style.display = 'none';
+                itemToDelete = null;
+                confirmDeleteBtn.textContent = '确认删除';
+            });
+
+            // 清空历史记录
+            clearHistoryBtn.addEventListener('click', function () {
+                if (historyContainer.children.length > 0) {
+                    deleteConfirm.style.display = 'flex';
+                    confirmDeleteBtn.textContent = '清空全部';
+                    itemToDelete = 'all';
+                }
+            });
+
+            // 检查历史记录是否为空
+            function checkEmptyHistory() {
+                if (historyContainer.children.length === 0) {
+                    historyContainer.innerHTML = `
+                        <div class="col-12">
+                            <div class="empty-history">
+                                <i class="fas fa-inbox"></i>
+                                <h4>暂无历史记录</h4>
+                                <p>您生成的作品将显示在这里</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            // 生成剪纸图案
+            function generateArtwork() {
+                const prompt = promptInput.value || '剪纸图案';
+
+                // 显示加载动画
+                previewPlaceholder.style.display = 'none';
+                generatingAnimation.style.display = 'block';
+                resultImage.style.display = 'none';
+                actionButtons.style.display = 'none';
+
+                // 生成SVG内容
+                setTimeout(() => {
+                    generatingAnimation.style.display = 'none';
+                    resultImage.style.display = 'block';
+                    actionButtons.style.display = 'flex';
+
+                    // 根据选择的风格生成不同的图案
+                    let svgContent = '';
+
+                    switch (selectedStyle) {
+                        case 'northern':
+                            svgContent = generateNorthernStyle(selectedColor, complexityLevel);
+                            break;
+                        case 'southern':
+                            svgContent = generateSouthernStyle(selectedColor, complexityLevel);
+                            break;
+                        case 'modern':
+                            svgContent = generateModernStyle(selectedColor, complexityLevel);
+                            break;
+                        default:
+                            svgContent = generateDefaultStyle(selectedColor);
+                    }
+
+                    currentSVG = svgContent;
+                    const svgData = `data:image/svg+xml;utf8,${encodeURIComponent(svgContent)}`;
+                    resultImage.src = svgData;
+
+                    // 添加到历史记录
+                    addToHistory(prompt, selectedStyle, selectedColor, complexityLevel, svgData);
+                }, 2000);
+            }
+
+            // 更新复杂度指示点
+            updateComplexityDots(complexityLevel);
+
+            // 生成不同风格的SVG
+            function generateNorthernStyle(color, complexity) {
+                // 简化SVG生成逻辑
+                const size = 400;
+                const strokeWidth = 8 - complexity;
+
+                return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}">
+                    <rect width="${size}" height="${size}" fill="#fff5e6"/>
+                    <path d="M100,150 Q200,50 300,150 T500,150" stroke="${color}" stroke-width="${strokeWidth}" fill="none"/>
+                    <circle cx="200" cy="100" r="${30 + complexity * 5}" fill="${color}"/>
+                    <path d="M150,250 Q200,150 250,250 T350,250" stroke="${color}" stroke-width="${strokeWidth}" fill="none"/>
+                    <path d="M180,300 L220,300 L200,350 Z" fill="${color}"/>
+                    <path d="M100,200 L50,250 L100,300 Z" fill="${color}"/>
+                    <path d="M300,200 L350,250 L300,300 Z" fill="${color}"/>
+                </svg>`;
+            }
+
+            function generateSouthernStyle(color, complexity) {
+                const size = 400;
+                const detail = complexity > 3 ? "M120,120 C150,80 250,80 280,120" : "M120,120 Q200,80 280,120";
+
+                return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}">
+                    <rect width="${size}" height="${size}" fill="#fff5e6"/>
+                    <path d="${detail}" stroke="${color}" stroke-width="6" fill="none"/>
+                    <circle cx="200" cy="150" r="${40 - complexity}" fill="${color}"/>
+                    <path d="M150,250 C180,200 220,200 250,250" stroke="${color}" stroke-width="6" fill="none"/>
+                    <circle cx="150" cy="200" r="${10 + complexity}" fill="${color}"/>
+                    <circle cx="250" cy="200" r="${10 + complexity}" fill="${color}"/>
+                    <path d="M180,280 L220,280 L200,330 Z" fill="${color}"/>
+                    ${complexity > 2 ? `<path d="M100,180 L80,220 L100,260 Z" fill="${color}"/>` : ''}
+                    ${complexity > 2 ? `<path d="M300,180 L320,220 L300,260 Z" fill="${color}"/>` : ''}
+                </svg>`;
+            }
+
+            function generateModernStyle(color, complexity) {
+                const size = 400;
+                let shapes = '';
+
+                // 根据复杂度添加更多形状
+                for (let i = 0; i < complexity * 2; i++) {
+                    const x = 100 + Math.random() * 200;
+                    const y = 100 + Math.random() * 200;
+                    const r = 10 + Math.random() * 20;
+                    shapes += `<circle cx="${x}" cy="${y}" r="${r}" fill="${color}" opacity="0.7"/>`;
+                }
+
+                return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}">
+                    <rect width="${size}" height="${size}" fill="#fff5e6"/>
+                    <path d="M150,150 Q200,100 250,150 T350,150" stroke="${color}" stroke-width="8" fill="none"/>
+                    <path d="M120,250 Q200,180 280,250" stroke="${color}" stroke-width="8" fill="none"/>
+                    <circle cx="200" cy="200" r="${25 + complexity * 3}" fill="${color}" opacity="0.8"/>
+                    <path d="M180,300 L220,300 L200,350 Z" fill="${color}"/>
+                    ${shapes}
+                </svg>`;
+            }
+
+            function generateDefaultStyle(color) {
+                const size = 400;
+                return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}">
+                    <rect width="${size}" height="${size}" fill="#fff5e6"/>
+                    <path d="M100,200 Q200,100 300,200" stroke="${color}" stroke-width="8" fill="none"/>
+                    <circle cx="200" cy="150" r="30" fill="${color}"/>
+                    <path d="M150,250 Q200,150 250,250" stroke="${color}" stroke-width="8" fill="none"/>
+                    <path d="M180,300 L220,300 L200,350 Z" fill="${color}"/>
+                </svg>`;
+            }
+
+            // 添加历史记录
+            function addToHistory(prompt, style, color, complexity, image) {
+                // 移除空历史提示
+                const emptyHistory = document.querySelector('.empty-history');
+                if (emptyHistory) {
+                    emptyHistory.remove();
+                }
+
+                const historyContainer = document.getElementById('historyContainer');
+                const date = new Date();
+                const dateStr = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+
+                const styleNames = {
+                    'northern': '北方风格',
+                    'southern': '南方风格',
+                    'modern': '现代风格'
+                };
+
+                const complexityNames = ['简单', '简单', '中等', '复杂', '非常复杂'];
+
+                const historyItem = document.createElement('div');
+                historyItem.className = 'col-md-4 mb-4';
+                historyItem.innerHTML = `
+                    <div class="history-item">
+                        <button class="history-delete"><i class="fas fa-times"></i></button>
+                        <div class="history-img">
+                            <img src="${image}" alt="${prompt}">
+                        </div>
+                        <div class="history-content">
+                            <div class="history-title">${prompt}</div>
+                            <div class="history-desc">${styleNames[style]} · 复杂度: ${complexityNames[complexity - 1]}</div>
+                            <small class="text-muted">${dateStr} 生成</small>
+                        </div>
+                    </div>
+                `;
+
+                // 添加到历史记录的开头
+                historyContainer.insertBefore(historyItem, historyContainer.firstChild);
+
+                // 如果历史记录超过6个，移除最后一个
+                if (historyContainer.children.length > 6) {
+                    historyContainer.removeChild(historyContainer.lastChild);
+                }
+
+                // 添加预览点击事件
+                historyItem.querySelector('.history-item').addEventListener('click', function (e) {
+                    // 如果点击的是删除按钮，则不预览
+                    if (e.target.closest('.history-delete')) {
+                        return;
+                    }
+
+                    previewPlaceholder.style.display = 'none';
+                    generatingAnimation.style.display = 'none';
+                    resultImage.style.display = 'block';
+                    actionButtons.style.display = 'flex';
+                    resultImage.src = image;
+                    currentSVG = decodeURIComponent(image.split(',')[1]);
+                });
+
+                // 添加删除事件
+                historyItem.querySelector('.history-delete').addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    itemToDelete = this.closest('.history-item').parentElement;
+                    deleteConfirm.style.display = 'flex';
+                    confirmDeleteBtn.textContent = '确认删除';
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

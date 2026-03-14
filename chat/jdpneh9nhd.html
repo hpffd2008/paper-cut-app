@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>剪纸生花-中国传统剪纸艺术</title>
+    <!-- 使用CDN引入Bootstrap 4.6.2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* 全局样式 */
+        body {
+            font-family: 'Microsoft YaHei', 'STKaiti', sans-serif;
+            background: linear-gradient(135deg, #f9f0e9, #f5e3da);
+            color: #8c1d18;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 顶部装饰 */
+        .top-decoration {
+            height: 20px;
+            background: linear-gradient(90deg, #8c1d18, #b22222, #8c1d18);
+            border-bottom: 2px solid #e8c4c2;
+        }
+
+        /* 头部样式 */
+        header {
+            position: relative;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="30" viewBox="0 0 200 30"><path d="M0,15 Q20,0 40,15 T80,15 Q60,30 40,15 T0,15" fill="%23f9f0e9" opacity="0.7"/></svg>') top repeat-x;
+            margin-bottom: -30px;
+        }
+
+        .title {
+            font-weight: bold;
+            color: #b22222;
+            text-shadow: 3px 3px 5px rgba(140, 29, 24, 0.3);
+            letter-spacing: 10px;
+            position: relative;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .title::after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 10%;
+            width: 80%;
+            height: 4px;
+            background: linear-gradient(to right, transparent, #b22222, transparent);
+        }
+
+        .subtitle {
+            font-size: 1.4rem;
+            margin-top: 15px;
+            color: #5a0f0c;
+            font-style: italic;
+            letter-spacing: 2px;
+        }
+
+        /* 导航栏 */
+        nav {
+            background: linear-gradient(to right, #8c1d18, #b22222);
+            box-shadow: 0 4px 10px rgba(140, 29, 24, 0.3);
+        }
+
+        .navbar-dark .navbar-nav .nav-link {
+            color: white;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 16px 25px;
+        }
+
+        .navbar-dark .navbar-nav .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .navbar-dark .navbar-nav .nav-link::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 3px;
+            background-color: #ffd700;
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+
+        .navbar-dark .navbar-nav .nav-link:hover::after {
+            width: 80%;
+        }
+
+        /* 边栏卡片样式 */
+        .sidebar-card {
+            background: rgba(249, 229, 229, 0.6);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: inset 0 0 10px rgba(140, 29, 24, 0.1);
+            border: 1px solid #e8c4c2;
+            height: 100%;
+        }
+
+        /* 内容区样式 */
+        .section-title {
+            font-size: 1.8rem;
+            color: #8c1d18;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px dashed #d9a7a4;
+            text-align: center;
+        }
+
+        .culture-intro {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #5a0f0c;
+            text-align: justify;
+        }
+
+        .culture-intro p {
+            margin-bottom: 20px;
+            text-indent: 2em;
+        }
+
+        /* 剪纸体验区 */
+        .paper-art-area {
+            background: #fff9f9;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(140, 29, 24, 0.1);
+            border: 1px solid #e8c4c2;
+            margin-bottom: 30px;
+        }
+
+        .paper {
+            width: 100%;
+            height: 400px;
+            background: white;
+            border: 2px dashed #e8c4c2;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            margin: 20px auto;
+        }
+
+        .paper::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><path d="M20,0 Q30,5 40,20 T20,40 Q10,35 0,20 T20,0Z" fill="none" stroke="%23e8c4c2" stroke-width="0.3"/></svg>');
+            opacity: 0.3;
+        }
+
+        .cut-pattern {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            background-color: #b22222;
+            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+            transition: all 1s ease;
+            opacity: 0;
+            animation: appear 1.5s forwards;
+        }
+
+        @keyframes appear {
+            to {
+                opacity: 1;
+            }
+        }
+
+        .btn {
+            padding: 12px 25px;
+            background: #8c1d18;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(140, 29, 24, 0.3);
+            display: flex;
+            align-items: center;
+        }
+
+        .btn:hover {
+            background: #b22222;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(140, 29, 24, 0.4);
+        }
+
+        /* 图库样式 */
+        .gallery-title {
+            font-size: 1.8rem;
+            color: #8c1d18;
+        }
+
+        .gallery-item {
+            background: #f9f0e9;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(140, 29, 24, 0.15);
+            position: relative;
+            height: 250px;
+            transition: all 0.4s ease;
+            border: 1px solid #e8c4c2;
+        }
+
+        .gallery-item:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 25px rgba(140, 29, 24, 0.25);
+            border-color: #b22222;
+        }
+
+        .pattern-img {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            color: #b22222;
+            transition: all 0.4s ease;
+        }
+
+        .gallery-item:hover .pattern-img {
+            transform: scale(1.1);
+        }
+
+        .pattern-name {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(140, 29, 24, 0.85);
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            transform: translateY(100%);
+            transition: transform 0.4s ease;
+        }
+
+        .gallery-item:hover .pattern-name {
+            transform: translateY(0);
+        }
+
+        /* 轮播图 */
+        .slider {
+            position: relative;
+            height: 500px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(140, 29, 24, 0.15);
+        }
+
+        .images {
+            display: flex;
+            height: 100%;
+            transition: transform 0.5s ease-in-out;
+        }
+
+        .image {
+            min-width: 100%;
+            position: relative;
+        }
+
+        .img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .p1 {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(140, 29, 24, 0.8);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+        }
+
+        .pt {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .pt1 {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .slider-control {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.3s;
+            z-index: 10;
+        }
+
+        .dots {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .dot.active {
+            background: white;
+        }
+
+        /* 工具列表 */
+        .tools-list {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .tool-item {
+            padding: 12px;
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+            border: 1px solid #e8c4c2;
+        }
+
+        .tool-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 10px rgba(140, 29, 24, 0.15);
+            border-color: #b22222;
+        }
+
+        .tool-item.active {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: #b22222;
+            box-shadow: 0 5px 10px rgba(140, 29, 24, 0.25);
+        }
+
+        .tool-icon {
+            width: 40px;
+            height: 40px;
+            background-color: #b22222;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .tool-name {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #5a0f0c;
+        }
+
+        .tool-desc {
+            font-size: 0.9rem;
+            color: #7a4a47;
+            margin-top: 5px;
+        }
+
+        /* 步骤列表 */
+        .steps-list {
+            padding-left: 25px;
+            color: #5a0f0c;
+            line-height: 1.8;
+            font-size: 1.1rem;
+        }
+
+        .steps-list li {
+            margin-bottom: 10px;
+        }
+
+        /* 页脚样式 */
+        footer {
+            background: linear-gradient(to right, #5a0f0c, #8c1d18);
+            color: #f9f0e9;
+            margin-top: 30px;
+        }
+
+        .footer-title {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #ffd700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .footer-text {
+            font-size: 1.1rem;
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+
+        .copyright {
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 0.9rem;
+            color: #e8c4c2;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 992px) {
+            .title {
+                font-size: 3rem;
+                letter-spacing: 5px;
+            }
+
+            .subtitle {
+                font-size: 1.1rem;
+            }
+
+            .paper {
+                height: 300px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.2rem;
+            }
+
+            .navbar-dark .navbar-nav .nav-link {
+                padding: 10px 15px;
+            }
+
+            .paper {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid px-0">
+        <!-- 顶部装饰条 -->
+        <div class="top-decoration"></div>
+        <!-- 头部 -->
+        <header class="py-5 text-center">
+            <div class="header-content">
+                <h1 class="title display-3">一纸千华</h1>
+                <p class="subtitle lead">一剪一世界 · 一纸一乾坤</p>
+            </div>
+        </header>
+        <!-- 导航栏 -->
+        <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+            <div class="container">
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav mx-auto">
+                        <li class="nav-item active">
+                            <a class="nav-link" href="./index.html"><i class="fas fa-home mr-1"></i>首页</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./AI-generation.html"><i class="fas fa-history mr-1"></i>AI剪纸生成</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./cut.html"><i class="fas fa-cut mr-1"></i>在线体验</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./appreciate.html"><i class="fas fa-image mr-1"></i>作品欣赏</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./teach.html"><i class="fas fa-video mr-1"></i>教学视频</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./about.html"><i class="fas fa-address-card mr-1"></i>关于我们</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <!-- 主体内容 -->
+        <div class="container-fluid py-4">
+            <div class="row">
+                <!-- 左侧边栏 -->
+                <div class="col-lg-3 mb-4">
+                    <div class="sidebar-card">
+                        <h2 class="section-title">剪纸文化</h2>
+                        <div class="culture-intro">
+                            <p>剪纸，又称刻纸，是中国最古老的民间艺术之一。其历史可追溯到公元6世纪，在纸张发明后逐渐发展起来。剪纸艺术起源于祭祀活动，古人用薄片材料剪刻成各种形象，用于祭祀祖先和神灵。
+                            </p>
+                            <p>唐代剪纸艺术已相当发达，宋代造纸业成熟为剪纸普及提供了条件。明清时期剪纸手工艺术达到鼎盛，广泛应用于民间装饰、节日庆典和婚丧嫁娶等场合。</p>
+                            <p>剪纸的内容很多，寓意很广。常见的主题有祥禽瑞兽、花草树木、亭桥风景、人物故事等。不同地区的剪纸风格各异：北方剪纸粗犷豪放，南方剪纸细腻婉约。</p>
+                            <p>2006年，剪纸艺术被列入国家级非物质文化遗产名录，成为中华民族文化宝库中的重要组成部分。</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- 主内容区 -->
+                <div class="col-lg-6 mb-4">
+                    <!-- 轮播图 -->
+                    <div class="slider">
+                        <div class="images">
+                            <div class="image">
+                                <img src="./images/轮播图/祥龙献瑞.png" alt="祥龙献瑞剪纸作品" class="img">
+                                <div class="p1">
+                                    <h3 class="pt">祥龙献瑞</h3>
+                                    <p class="pt1">以龙为主题的传统剪纸，象征吉祥如意、权威尊贵</p>
+                                </div>
+                            </div>
+                            <div class="image">
+                                <img src="./images/轮播图/双喜临门.png" alt="双喜临门剪纸作品" class="img">
+                                <div class="p1">
+                                    <h3 class="pt">双喜临门</h3>
+                                    <p class="pt1">传统婚礼装饰剪纸，寓意好事成双、幸福美满</p>
+                                </div>
+                            </div>
+                            <div class="image">
+                                <img src="./images/轮播图/年年有余.png" alt="年年有余剪纸作品" class="img">
+                                <div class="p1">
+                                    <h3 class="pt">年年有余</h3>
+                                    <p class="pt1">鱼与莲花的组合，象征富足有余、生活美满</p>
+                                </div>
+                            </div>
+                            <div class="image">
+                                <img src="./images/轮播图/四季平安.png" alt="四季平安剪纸作品" class="img">
+                                <div class="p1">
+                                    <h3 class="pt">四季平安</h3>
+                                    <p class="pt1">以四季花卉为元素，寓意全年平安顺遂</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="dots">
+                            <button class="dot active" data-index="0"></button>
+                            <button class="dot" data-index="1"></button>
+                            <button class="dot" data-index="2"></button>
+                            <button class="dot" data-index="3"></button>
+                        </div>
+                    </div>
+
+                    <!-- 剪纸精品欣赏 -->
+                    <h2 class="gallery-title text-center my-4">剪纸精品欣赏</h2>
+                    <div class="row">
+                        <div class="col-md-4 mb-4">
+                            <div class="gallery-item" data-title="祥龙献瑞" data-img="./images/轮播图/祥龙献瑞.png">
+                                <div class="pattern-img">
+                                    <i class="fas fa-dragon"></i>
+                                </div>
+                                <div class="pattern-name">祥龙献瑞</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <div class="gallery-item" data-title="双喜临门" data-img="./images/轮播图/双喜临门.png">
+                                <div class="pattern-img">
+                                    <i class="fas fa-dove"></i>
+                                </div>
+                                <div class="pattern-name">双喜临门</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <div class="gallery-item" data-title="年年有余" data-img="./images/轮播图/年年有余.png">
+                                <div class="pattern-img">
+                                    <i class="fas fa-fish"></i>
+                                </div>
+                                <div class="pattern-name">年年有余</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <div class="gallery-item" data-title="生命之树" data-img="./images/轮播图/生命之树.jpg">
+                                <div class="pattern-img">
+                                    <i class="fas fa-tree"></i>
+                                </div>
+                                <div class="pattern-name">生命之树</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <div class="gallery-item" data-title="喜鹊登梅" data-img="./images/轮播图/喜鹊登梅.jpg">
+                                <div class="pattern-img">
+                                    <i class="fas fa-kiwi-bird"></i>
+                                </div>
+                                <div class="pattern-name">喜鹊登梅</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <div class="gallery-item" data-title="瑞雪丰年" data-img="./images/轮播图/祥龙献瑞.png">
+                                <div class="pattern-img">
+                                    <i class="fas fa-snowflake"></i>
+                                </div>
+                                <div class="pattern-name">瑞雪丰年</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 右侧边栏 -->
+                <div class="col-lg-3 mb-4">
+                    <div class="sidebar-card">
+                        <h2 class="section-title">剪纸工具</h2>
+                        <ul class="tools-list">
+                            <li class="tool-item" data-name="剪刀" data-desc="剪刀是剪纸艺术中不可或缺的工具，传统剪纸艺人常用锋利的剪刀进行细致裁剪。">
+                                <div class="tool-icon">
+                                    <i class="fas fa-cut"></i>
+                                </div>
+                                <div>
+                                    <div class="tool-name">剪刀</div>
+                                    <div class="tool-desc">传统剪纸的主要工具</div>
+                                </div>
+                            </li>
+                            <li class="tool-item" data-name="刻刀" data-desc="刻刀用于雕刻更为复杂的剪纸图案，适合精细部位的雕刻。">
+                                <div class="tool-icon">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </div>
+                                <div>
+                                    <div class="tool-name">刻刀</div>
+                                    <div class="tool-desc">用于雕刻复杂图案</div>
+                                </div>
+                            </li>
+                            <li class="tool-item" data-name="红纸" data-desc="红纸是剪纸中最常用的材料，象征着喜庆、幸福与繁荣。">
+                                <div class="tool-icon">
+                                    <i class="fas fa-palette"></i>
+                                </div>
+                                <div>
+                                    <div class="tool-name">红纸</div>
+                                    <div class="tool-desc">象征喜庆的传统材料</div>
+                                </div>
+                            </li>
+                            <li class="tool-item" data-name="模板" data-desc="模板帮助剪纸艺人快速、精准地完成设计，尤其适用于大面积作品。">
+                                <div class="tool-icon">
+                                    <i class="fas fa-ruler"></i>
+                                </div>
+                                <div>
+                                    <div class="tool-name">模板</div>
+                                    <div class="tool-desc">辅助创作的图案模板</div>
+                                </div>
+                            </li>
+                            <li class="tool-item" data-name="创意" data-desc="创意是剪纸的灵魂，作品的独特性和美感来源于创意。">
+                                <div class="tool-icon">
+                                    <i class="fas fa-lightbulb"></i>
+                                </div>
+                                <div>
+                                    <div class="tool-name">创意</div>
+                                    <div class="tool-desc">剪纸艺术的灵魂</div>
+                                </div>
+                            </li>
+                        </ul>
+
+                        <h2 class="section-title">剪纸步骤</h2>
+                        <ol class="steps-list">
+                            <li>设计图案</li>
+                            <li>纸张折叠</li>
+                            <li>固定模板</li>
+                            <li>剪刻结合</li>
+                            <li>展开修整</li>
+                            <li>装裱展示</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 工具类模态框 -->
+        <div class="modal fade" id="toolDetailModal" tabindex="-1" role="dialog" aria-labelledby="toolDetailTitle"
+            aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="toolDetailTitle">工具名称</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="关闭">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="toolDetailContent">
+                        这里是工具详细介绍...
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 剪纸作品模态框 -->
+        <div class="modal fade" id="galleryModal" tabindex="-1" role="dialog" aria-labelledby="galleryModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="galleryModalLabel">作品标题</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="关闭">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <img id="galleryModalImage" src="" alt="剪纸作品" class="img-fluid">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部 -->
+        <footer class="py-5">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-8 mx-auto text-center">
+                        <h3 class="footer-title">一纸千华 · 中华瑰宝</h3>
+                        <p class="footer-text">剪纸艺术是中国民间艺术的瑰宝，承载着中华民族深厚的文化底蕴和审美情趣。每一幅剪纸作品都是民间艺人智慧的结晶，是连接过去与未来的文化桥梁。
+                        </p>
+                        <p class="footer-text">让我们共同保护和传承这一非物质文化遗产，让剪纸艺术在新时代绽放更加绚丽的光彩。</p>
+                        <div class="copyright mt-4 pt-3">
+                            <p>© 2025 一纸千华 - 中国传统剪纸艺术传承网</p>
+                            <p>邮箱：contact@paper-art.cn | 电话：010-88889999</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 引入jQuery和Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // 轮播图控制逻辑
+            const sliderImages = document.querySelector('.images');
+            const slides = document.querySelectorAll('.image');
+            const dots = document.querySelectorAll('.dot');
+
+            let currentIndex = 0;
+            const slideCount = slides.length;
+
+            function updateSliderPosition() {
+                if (!sliderImages) return;
+                sliderImages.style.transform = `translateX(-${currentIndex * 100}%)`;
+                dots.forEach(dot => dot.classList.remove('active'));
+                if (dots[currentIndex]) {
+                    dots[currentIndex].classList.add('active');
+                }
+            }
+
+            function nextSlide() {
+                currentIndex = (currentIndex + 1) % slideCount;
+                updateSliderPosition();
+            }
+
+            let sliderInterval = setInterval(nextSlide, 5000); // 5秒切换一次
+
+            dots.forEach(dot => {
+                dot.addEventListener('click', function () {
+                    clearInterval(sliderInterval);
+                    currentIndex = parseInt(this.getAttribute('data-index'));
+                    updateSliderPosition();
+                    sliderInterval = setInterval(nextSlide, 5000); // 重新启动自动轮播
+                });
+            });
+
+            updateSliderPosition(); // 初始化
+
+            // 工具栏点击 弹出模态框逻辑
+            const toolItems = document.querySelectorAll('.tool-item');
+
+            toolItems.forEach(item => {
+                item.addEventListener('click', function () {
+                    const name = item.getAttribute('data-name');
+                    const desc = item.getAttribute('data-desc');
+
+                    document.getElementById('toolDetailTitle').innerText = name;
+                    document.getElementById('toolDetailContent').innerText = desc;
+
+                    $('#toolDetailModal').modal('show');
+                });
+            });
+
+            // 剪纸精品类模态框
+            $(".gallery-item").click(function () {
+                var title = $(this).data("title");
+                var imgSrc = $(this).data("img");
+                $("#galleryModalLabel").text(title);
+                $("#galleryModalImage").attr("src", imgSrc);
+                $("#galleryModal").modal("show");
+            });
+        });
+    </script>
+</body>
+
+</html>

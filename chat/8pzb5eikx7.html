@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线体验</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;700&display=swap"
+        rel="stylesheet">
+
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <script src="/framework/bootstrap-4.6.2-dist/bootstrap-4.6.2-dist/js/jquery.min.js"></script>
+    <script src="/framework//bootstrap-4.6.2-dist/bootstrap-4.6.2-dist/js/popper.min.js"></script>
+    <script src="/framework/bootstrap-4.6.2-dist/bootstrap-4.6.2-dist/js/bootstrap.min.js"></script>
+    <script src="/framework/vue.js"></script>
+    <script src="/reception/js/cut.js"></script>
+
+    <style>
+        /* 全局样式 */
+        body {
+            font-family: 'Microsoft YaHei', 'STKaiti', sans-serif;
+            background: linear-gradient(135deg, #f9f0e9, #f5e3da);
+            color: #8c1d18;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 顶部装饰 */
+        .top-decoration {
+            height: 20px;
+            background: linear-gradient(90deg, #8c1d18, #b22222, #8c1d18);
+            border-bottom: 2px solid #e8c4c2;
+        }
+
+        /* 头部样式 */
+        header {
+            position: relative;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="30" viewBox="0 0 200 30"><path d="M0,15 Q20,0 40,15 T80,15 Q60,30 40,15 T0,15" fill="%23f9f0e9" opacity="0.7"/></svg>') top repeat-x;
+            margin-bottom: -30px;
+        }
+
+        .title {
+            font-weight: bold;
+            color: #b22222;
+            text-shadow: 3px 3px 5px rgba(140, 29, 24, 0.3);
+            letter-spacing: 10px;
+            position: relative;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .title::after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 10%;
+            width: 80%;
+            height: 4px;
+            background: linear-gradient(to right, transparent, #b22222, transparent);
+        }
+
+        .subtitle {
+            font-size: 1.4rem;
+            margin-top: 15px;
+            color: #5a0f0c;
+            font-style: italic;
+            letter-spacing: 2px;
+        }
+
+        /* 导航栏 */
+        nav {
+            background: linear-gradient(to right, #8c1d18, #b22222);
+            box-shadow: 0 4px 10px rgba(140, 29, 24, 0.3);
+        }
+
+        .navbar-dark .navbar-nav .nav-link {
+            color: white;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 16px 25px;
+        }
+
+        .navbar-dark .navbar-nav .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .navbar-dark .navbar-nav .nav-link::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 3px;
+            background-color: #ffd700;
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+
+        .navbar-dark .navbar-nav .nav-link:hover::after {
+            width: 80%;
+        }
+
+        /* 绘制 */
+        main.container {
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+
+        .tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            padding: 6px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(231, 126, 34, 0.1);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 14px 0;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            border-radius: 8px;
+            z-index: 1;
+        }
+
+        .tab:not(.active):hover {
+            color: #b22222;
+            background: rgba(231, 76, 60, 0.05);
+        }
+
+        .tab.active {
+            color: white;
+        }
+
+        .tab.active::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #b22222, #b22222);
+            border-radius: 8px;
+            z-index: -1;
+            box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        #canvas {
+            display: block;
+            cursor: crosshair;
+            background: white;
+            width: 100%;
+            height: 100%;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .tools {
+            display: flex;
+            background: white;
+            border-radius: 50px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .tool-button {
+            padding: 12px 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: #333;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tool-button:not(.active):hover {
+            background: rgba(231, 76, 60, 0.05);
+            color: #b22222;
+        }
+
+        .tool-button.active {
+            background: linear-gradient(135deg, #b22222, #b22222);
+            color: white;
+        }
+
+        .button {
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(135deg, #b22222, #b22222);
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+            min-width: 140px;
+            justify-content: center;
+        }
+
+        .button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+        }
+
+        .button:active {
+            transform: translateY(1px);
+        }
+
+        /* 页脚样式 */
+        footer {
+            background: linear-gradient(to right, #5a0f0c, #8c1d18);
+            color: #f9f0e9;
+            margin-top: 30px;
+        }
+
+        .footer-title {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #ffd700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .footer-text {
+            font-size: 1.1rem;
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+
+        .copyright {
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 0.9rem;
+            color: #e8c4c2;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 992px) {
+            .title {
+                font-size: 3rem;
+                letter-spacing: 5px;
+            }
+
+            .subtitle {
+                font-size: 1.1rem;
+            }
+
+            .paper {
+                height: 300px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.2rem;
+            }
+
+            .navbar-dark .navbar-nav .nav-link {
+                padding: 10px 15px;
+            }
+
+            .paper {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid px-0">
+        <!-- 顶部装饰条 -->
+        <div class="top-decoration"></div>
+        <!-- 头部 -->
+        <header class="py-5 text-center">
+            <div class="header-content">
+                <h1 class="title display-3">一纸千华</h1>
+                <p class="subtitle lead">一剪一世界 · 一纸一乾坤</p>
+            </div>
+        </header>
+        <!-- 导航栏 -->
+        <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+            <div class="container">
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav mx-auto">
+                        <li class="nav-item active">
+                            <a class="nav-link" href="./index.html"><i class="fas fa-home mr-1"></i>首页</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./AI-generation.html"><i
+                                    class="fas fa-history mr-1"></i>AI剪纸生成</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./cut.html"><i class="fas fa-cut mr-1"></i>在线体验</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./appreciate.html"><i class="fas fa-image mr-1"></i>作品欣赏</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./teach.html"><i class="fas fa-video mr-1"></i>教学视频</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./about.html"><i class="fas fa-address-card mr-1"></i>关于我们</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <!-- 绘制 -->
+        <main class="container">
+            <div class="tabs" id="shapeTabs">
+                <button class="tab active" data-value="4">四角</button>
+                <button class="tab" data-value="5">五角</button>
+                <button class="tab" data-value="8">八角</button>
+                <button class="tab" data-value="12">十二角</button>
+                <button class="tab" data-value="16">十六角</button>
+            </div>
+            <div class="canvas-container">
+                <canvas id="canvas" width="600" height="600"></canvas>
+            </div>
+            <div class="buttons">
+                <div class="tools">
+                    <button class="tool-button active" id="penTool">画笔</button>
+                    <button class="tool-button" id="eraserTool">橡皮擦</button>
+                </div>
+                <button class="button" id="copyButton">展开</button>
+                <button class="button" id="resetButton">复原</button>
+                <button class="button" id="downloadButton" style="display: none;">下载原图</button>
+            </div>
+        </main>
+        <!-- 底部 -->
+        <footer class="py-5">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-8 mx-auto text-center">
+                        <h3 class="footer-title">一纸千华 · 中华瑰宝</h3>
+                        <p class="footer-text">剪纸艺术是中国民间艺术的瑰宝，承载着中华民族深厚的文化底蕴和审美情趣。每一幅剪纸作品都是民间艺人智慧的结晶，是连接过去与未来的文化桥梁。
+                        </p>
+                        <p class="footer-text">让我们共同保护和传承这一非物质文化遗产，让剪纸艺术在新时代绽放更加绚丽的光彩。</p>
+                        <div class="copyright mt-4 pt-3">
+                            <p>© 2025 一纸千华 - 中国传统剪纸艺术传承网</p>
+                            <p>邮箱：contact@paper-art.cn | 电话：010-88889999</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+    </div>
+
+
+    <script>
+        // 设置视口
+        (function () {
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            const viewport = document.querySelector('meta[name="viewport"]');
+            if (isMobile) {
+                viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=3.0';
+            } else {
+                viewport.content = 'width=device-width, initial-scale=1.0, user-scalable=no';
+            }
+        })();
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            let centerX = canvas.width / 2;
+            let centerY = canvas.height / 2;
+
+            // 形状配置
+            const shapeConfigs = {
+                4: { angle: 90, copies: 3 },
+                5: { angle: 36, copies: 9 },
+                8: { angle: 45, copies: 7 },
+                12: { angle: 30, copies: 11 },
+                16: { angle: 22.5, copies: 15 }
+            };
+
+            // 当前选择的形状
+            let currentShape = 4;
+
+            // 三角形参数
+            let triangleHeight = 240;
+            let topAngle = shapeConfigs[currentShape].angle * Math.PI / 180;
+            let baseWidth = 2 * triangleHeight * Math.tan(topAngle / 2);
+
+            // 存储用户绘制的线条
+            let userLines = [];
+            let isDrawing = false;
+            let currentLine = [];
+
+            // 工具相关变量
+            let currentTool = 'pen';
+            const ERASER_SIZE = 20;
+
+            // 更新形状函数
+            function updateShape(sides) {
+                currentShape = parseInt(sides);
+                topAngle = shapeConfigs[currentShape].angle * Math.PI / 180;
+                baseWidth = 2 * triangleHeight * Math.tan(topAngle / 2);
+                reset();
+            }
+
+            // 重置函数
+            function reset() {
+                userLines = [];
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawTriangle(centerX, centerY, 0, false, true);
+                // 隐藏下载按钮
+                document.getElementById('downloadButton').style.display = 'none';
+            }
+
+            // 绘制基础三角形
+            function drawTriangle(x, y, rotation = 0, mirror = false) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+
+                if (mirror) {
+                    ctx.scale(-1, 1);
+                }
+
+                // 定义三角形路径
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(-baseWidth / 2, triangleHeight);
+                ctx.lineTo(baseWidth / 2, triangleHeight);
+                ctx.closePath();
+
+                // 设置裁剪区域
+                ctx.clip();
+
+                ctx.fillStyle = 'white';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // 绘制用户的线条
+                for (const line of userLines) {
+                    if (line.length > 0) {
+                        ctx.beginPath();
+                        ctx.moveTo(line[0].x - centerX, line[0].y - centerY);
+                        for (let i = 1; i < line.length; i++) {
+                            ctx.lineTo(line[i].x - centerX, line[i].y - centerY);
+                        }
+                        ctx.strokeStyle = 'red';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                }
+
+                ctx.restore();
+            }
+
+            // 工具切换事件
+            // 画笔
+            document.getElementById('penTool').addEventListener('click', function () {
+                currentTool = 'pen';
+                this.classList.add('active');
+                document.getElementById('eraserTool').classList.remove('active');
+                canvas.style.cursor = 'crosshair';
+            });
+            // 橡皮擦
+            document.getElementById('eraserTool').addEventListener('click', function () {
+                currentTool = 'eraser';
+                this.classList.add('active');
+                document.getElementById('penTool').classList.remove('active');
+                canvas.style.cursor = 'cell';
+            });
+
+            function eraseLines(x, y) {
+                const eraseRadius = ERASER_SIZE;
+                userLines = userLines.filter(line => {
+                    for (let point of line) {
+                        const dx = point.x - x;
+                        const dy = point.y - y;
+                        if (Math.sqrt(dx * dx + dy * dy) < eraseRadius) {
+                            return false;
+                        }
+                    }
+                    return true;
+                });
+            }
+
+            // 绘图事件处理
+            function startDrawing(x, y) {
+                isDrawing = true;
+                if (currentTool === 'pen') {
+                    currentLine = [{ x: x, y: y }];
+                } else {
+                    eraseLines(x, y);
+                }
+            }
+
+            function draw(x, y) {
+                if (!isDrawing) return;
+
+                if (currentTool === 'pen') {
+                    currentLine.push({ x: x, y: y });
+                } else {
+                    eraseLines(x, y);
+                }
+
+                // 重绘
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawTriangle(centerX, centerY, 0, false);
+
+                // 如果是画笔模式，绘制当前线条
+                if (currentTool === 'pen' && currentLine.length > 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(currentLine[0].x, currentLine[0].y);
+                    for (let i = 1; i < currentLine.length; i++) {
+                        ctx.lineTo(currentLine[i].x, currentLine[i].y);
+                    }
+                    ctx.strokeStyle = 'red';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+
+            function endDrawing() {
+                if (isDrawing && currentTool === 'pen' && currentLine.length > 1) {
+                    userLines.push(currentLine);
+                }
+
+                isDrawing = false;
+
+                // 重绘
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawTriangle(centerX, centerY, 0, false);
+            }
+
+            // 鼠标事件
+            canvas.addEventListener('mousedown', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                startDrawing(x, y);
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                draw(x, y);
+            });
+
+            canvas.addEventListener('mouseup', endDrawing);
+            canvas.addEventListener('mouseleave', endDrawing);
+
+            // 触摸事件
+            canvas.addEventListener('touchstart', (e) => {
+                if (e.touches.length > 1) return;
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+                startDrawing(x, y);
+            });
+
+            canvas.addEventListener('touchmove', (e) => {
+                if (e.touches.length > 1 || !isDrawing) return;
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+                draw(x, y);
+            });
+
+            canvas.addEventListener('touchend', endDrawing);
+            canvas.addEventListener('touchcancel', endDrawing);
+
+            // 复制按钮点击事件
+            document.getElementById('copyButton').addEventListener('click', function () {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawTriangle(centerX, centerY, 0, false);
+
+                const copies = shapeConfigs[currentShape].copies;
+
+                if (currentShape === 5) {
+                    for (let i = 0; i < copies; i++) {
+                        const rotation = ((i + 1) * Math.PI * 2) / 10;
+                        const mirror = i % 2 === 0;
+                        drawTriangle(centerX, centerY, rotation, mirror);
+                    }
+                } else {
+                    for (let i = 0; i < copies; i++) {
+                        const rotation = ((i + 1) * Math.PI * 2) / currentShape;
+                        const mirror = i % 2 === 0;
+                        drawTriangle(centerX, centerY, rotation, mirror);
+                    }
+                }
+
+                // 显示下载按钮
+                document.getElementById('downloadButton').style.display = 'inline-block';
+            });
+
+            // 形状选择事件
+            document.getElementById('shapeTabs').addEventListener('click', function (e) {
+                if (e.target.classList.contains('tab')) {
+                    document.querySelectorAll('.tab').forEach(tab => {
+                        tab.classList.remove('active');
+                    });
+                    e.target.classList.add('active');
+                    updateShape(e.target.dataset.value);
+                }
+            });
+
+            // 复原按钮点击事件
+            document.getElementById('resetButton').addEventListener('click', reset);
+
+            // 下载按钮点击事件
+            document.getElementById('downloadButton').addEventListener('click', function () {
+                // 创建临时canvas
+                const tempCanvas = document.createElement('canvas');
+                const scale = 3;
+                tempCanvas.width = canvas.width * scale;
+                tempCanvas.height = canvas.height * scale;
+                const tempCtx = tempCanvas.getContext('2d');
+
+                // 设置图像质量
+                tempCtx.scale(scale, scale);
+                tempCtx.imageSmoothingEnabled = true;
+                tempCtx.imageSmoothingQuality = 'high';
+
+                // 绘制背景
+                tempCtx.fillStyle = 'white';
+                tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+                // 绘制图案
+                const copies = shapeConfigs[currentShape].copies;
+                const tempCenterX = tempCanvas.width / 2;
+                const tempCenterY = tempCanvas.height / 2;
+
+                if (currentShape === 5) {
+                    for (let i = 0; i < copies; i++) {
+                        const rotation = ((i + 1) * Math.PI * 2) / 10;
+                        const mirror = i % 2 === 0;
+                        drawTriangleOnContext(tempCtx, tempCenterX, tempCenterY, rotation, mirror);
+                    }
+                } else {
+                    for (let i = 0; i < copies; i++) {
+                        const rotation = ((i + 1) * Math.PI * 2) / currentShape;
+                        const mirror = i % 2 === 0;
+                        drawTriangleOnContext(tempCtx, tempCenterX, tempCenterY, rotation, mirror);
+                    }
+                }
+
+                // 创建下载链接
+                const link = document.createElement('a');
+                link.download = '剪纸图案.png';
+                link.href = tempCanvas.toDataURL('image/png', 1.0);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+
+            // 绘制函数（用于高分辨率）
+            function drawTriangleOnContext(ctx, x, y, rotation, mirror) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+
+                if (mirror) {
+                    ctx.scale(-1, 1);
+                }
+
+                // 定义三角形路径
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(-baseWidth / 2, triangleHeight);
+                ctx.lineTo(baseWidth / 2, triangleHeight);
+                ctx.closePath();
+
+                // 设置裁剪区域
+                ctx.clip();
+
+                ctx.fillStyle = 'white';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
+                ctx.stroke();
+
+                // 绘制用户的线条
+                for (const line of userLines) {
+                    if (line.length > 0) {
+                        ctx.beginPath();
+                        ctx.moveTo(line[0].x - centerX, line[0].y - centerY);
+                        for (let i = 1; i < line.length; i++) {
+                            ctx.lineTo(line[i].x - centerX, line[i].y - centerY);
+                        }
+                        ctx.strokeStyle = 'red';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                }
+
+                ctx.restore();
+            }
+
+            // 调整画布大小
+            function resizeCanvas() {
+                const container = document.querySelector('.container');
+                const containerWidth = container.offsetWidth;
+                const isMobile = window.innerWidth <= 768;
+
+                // 移动端调整
+                if (isMobile) {
+                    const canvasSize = Math.min(containerWidth * 0.95, window.innerHeight * 0.6);
+                    canvas.style.width = canvasSize + 'px';
+                    canvas.style.height = canvasSize + 'px';
+                } else {
+                    canvas.style.width = '600px';
+                    canvas.style.height = '600px';
+                }
+
+                // 更新尺寸
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+                centerX = canvas.width / 2;
+                centerY = canvas.height / 2;
+
+                // 调整三角形大小
+                triangleHeight = Math.min(canvas.width, canvas.height) * 0.4;
+                topAngle = shapeConfigs[currentShape].angle * Math.PI / 180;
+                baseWidth = 2 * triangleHeight * Math.tan(topAngle / 2);
+
+                // 重新绘制
+                reset();
+            }
+
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            // 初始化绘制
+            reset();
+        });
+    </script>
+</body>
+
+</html>

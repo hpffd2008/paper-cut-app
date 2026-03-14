@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>剪纸生花-关于我们</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;700&display=swap"
+        rel="stylesheet">
+    <script src="/framework/bootstrap-4.6.2-dist/bootstrap-4.6.2-dist/js/jquery.min.js"></script>
+    <script src="/framework/bootstrap-4.6.2-dist/bootstrap-4.6.2-dist/js/bootstrap.min.js"></script>
+
+    <style>
+        /* 全局样式 */
+        body {
+            font-family: 'Microsoft YaHei', 'STKaiti', sans-serif;
+            background: linear-gradient(135deg, #f9f0e9, #f5e3da);
+            color: #8c1d18;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 顶部装饰 */
+        .top-decoration {
+            height: 20px;
+            background: linear-gradient(90deg, #8c1d18, #b22222, #8c1d18);
+            border-bottom: 2px solid #e8c4c2;
+        }
+
+        /* 头部样式 */
+        header {
+            position: relative;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="30" viewBox="0 0 200 30"><path d="M0,15 Q20,0 40,15 T80,15 Q60,30 40,15 T0,15" fill="%23f9f0e9" opacity="0.7"/></svg>') top repeat-x;
+            margin-bottom: -30px;
+        }
+
+        .title {
+            font-weight: bold;
+            font-size: 72px;
+            color: #b22222;
+            text-shadow: 3px 3px 5px rgba(140, 29, 24, 0.3);
+            letter-spacing: 10px;
+            position: relative;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .title::after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 10%;
+            width: 80%;
+            height: 4px;
+            background: linear-gradient(to right, transparent, #b22222, transparent);
+        }
+
+        .subtitle {
+            font-size: 1.4rem;
+            margin-top: 15px;
+            color: #5a0f0c;
+            font-style: italic;
+            letter-spacing: 2px;
+        }
+
+        /* 导航栏 */
+        nav {
+            background: linear-gradient(to right, #8c1d18, #b22222);
+            box-shadow: 0 4px 10px rgba(140, 29, 24, 0.3);
+        }
+
+        .navbar-dark .navbar-nav .nav-link {
+            color: white;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 16px 25px;
+        }
+
+        .navbar-dark .navbar-nav .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .navbar-dark .navbar-nav .nav-link::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 3px;
+            background-color: #ffd700;
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+
+        .navbar-dark .navbar-nav .nav-link:hover::after {
+            width: 80%;
+        }
+
+        /* 主内容区 */
+        main {
+            margin-top: 30px;
+            margin-bottom: 60px;
+        }
+
+        .section-header {
+            position: relative;
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 2.2rem;
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 10px;
+            font-family: 'Ma Shan Zheng', cursive;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            color: var(--dark-color);
+            opacity: 0.8;
+            margin-bottom: 15px;
+        }
+
+        .divider {
+            width: 100px;
+            height: 4px;
+            background: linear-gradient(to right, var(--light-color), var(--secondary-color), var(--light-color));
+            border-radius: 2px;
+        }
+
+        /* 关于我们内容 */
+        .about-content {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(140, 29, 24, 0.1);
+            border: 1px solid rgba(140, 29, 24, 0.1);
+            backdrop-filter: blur(5px);
+        }
+
+        .mission-card {
+            background: linear-gradient(135deg, #fdf8f5, #f9f0e9);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(140, 29, 24, 0.1);
+            border: 1px solid rgba(140, 29, 24, 0.1);
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .mission-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(140, 29, 24, 0.2);
+        }
+
+        .mission-icon {
+            font-size: 3rem;
+            color: var(--secondary-color);
+            margin-bottom: 20px;
+        }
+
+        /* 留言板部分 */
+        .message-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .message-header {
+            background: #bc2020;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .message-header h2 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .message-body {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #e0d0c0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background: #fcf9f5;
+        }
+
+        .form-control:focus {
+            border-color: #d4a76a;
+            box-shadow: 0 0 0 3px rgba(212, 167, 106, 0.2);
+            outline: none;
+        }
+
+        textarea.form-control {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .btn-submit {
+            background: #bc2020;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: block;
+            width: 100%;
+            max-width: 200px;
+            margin: 20px auto 0;
+        }
+
+        .btn-submit:hover {
+            background: #a00;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(188, 32, 32, 0.3);
+        }
+
+        .message-list {
+            margin-top: 40px;
+            border-top: 1px solid #f0e6d8;
+            padding-top: 30px;
+        }
+
+        .message-item {
+            background: #fcf9f5;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            position: relative;
+            border-left: 4px solid #d4a76a;
+        }
+
+        .message-item::before {
+            content: "";
+            position: absolute;
+            top: 15px;
+            left: 10px;
+            font-size: 3rem;
+            color: rgba(188, 32, 32, 0.1);
+            font-family: Georgia, serif;
+            line-height: 1;
+        }
+
+        .message-author {
+            font-weight: bold;
+            color: #bc2020;
+            margin-bottom: 5px;
+        }
+
+        .message-date {
+            color: #a0a0a0;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .message-content {
+            line-height: 1.6;
+        }
+
+        /* 页脚样式 */
+        footer {
+            background: linear-gradient(to right, #5a0f0c, #8c1d18);
+            color: #f9f0e9;
+            margin-top: 30px;
+        }
+
+        .footer-title {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #ffd700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .footer-text {
+            font-size: 1.1rem;
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+
+        .copyright {
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 0.9rem;
+            color: #e8c4c2;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 992px) {
+            .title {
+                font-size: 3rem;
+                letter-spacing: 5px;
+            }
+
+            .subtitle {
+                font-size: 1.1rem;
+            }
+
+            .paper {
+                height: 300px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.2rem;
+            }
+
+            .navbar-dark .navbar-nav .nav-link {
+                padding: 10px 15px;
+            }
+
+            .paper {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid px-0">
+        <!-- 顶部装饰条 -->
+        <div class="top-decoration"></div>
+        <!-- 头部 -->
+        <header class="py-5 text-center">
+            <div class="header-content">
+                <h1 class="title display-3">一纸千华</h1>
+                <p class="subtitle lead">一剪一世界 · 一纸一乾坤</p>
+            </div>
+        </header>
+        <!-- 导航栏 -->
+        <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+            <div class="container">
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav mx-auto">
+                        <li class="nav-item active">
+                            <a class="nav-link" href="./index.html"><i class="fas fa-home mr-1"></i>首页</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./AI-generation.html"><i
+                                    class="fas fa-history mr-1"></i>AI剪纸生成</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./cut.html"><i class="fas fa-cut mr-1"></i>在线体验</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./appreciate.html"><i class="fas fa-image mr-1"></i>作品欣赏</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./teach.html"><i class="fas fa-video mr-1"></i>教学视频</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./about.html"><i class="fas fa-address-card mr-1"></i>关于我们</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 主内容区 -->
+        <main class="container py-5">
+            <!-- 项目介绍 -->
+            <section class="mb-5">
+                <div class="about-content">
+                    <div class="row align-items-center">
+                        <div class="col-lg-6 mb-4 mb-lg-0">
+                            <img src="./images/关于我们/剪纸艺术数字化传承.jpg" alt="剪纸艺术" class="img-fluid rounded shadow">
+                        </div>
+                        <div class="col-lg-6">
+                            <h3 class="mb-3" style="color: var(--primary-color);">剪纸艺术数字化传承</h3>
+                            <p>一纸千华项目始于2025年，由一群热爱中国传统文化的数字艺术家和文化保护工作者共同发起。我们致力于将千年剪纸艺术带入数字时代，通过现代技术保护和传承这一珍贵的非物质文化遗产。
+                            </p>
+                            <p>剪纸艺术作为中国民间艺术的瑰宝，承载着中华民族深厚的文化底蕴和审美情趣。然而，随着现代化进程的加速，传统剪纸艺术面临着传承危机。剪纸生花项目应运而生，旨在通过数字化手段记录、保存和传播剪纸艺术。
+                            </p>
+                            <p>我们的平台汇集了全国各地的剪纸艺术家作品，利用AI技术生成剪纸图案，提供在线剪纸体验，并通过教学视频和作品展示，让更多人了解、学习和传承这门古老而美丽的艺术。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 留言板部分 -->
+            <div class="container">
+                <div class="message-container fade-in">
+                    <div class="message-header">
+                        <h2>留言板</h2>
+                        <p>分享您对剪纸艺术的看法和建议</p>
+                    </div>
+                    <div class="message-body">
+                        <form id="messageForm">
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="name" placeholder="您的姓名" required>
+                            </div>
+                            <div class="form-group">
+                                <input type="email" class="form-control" id="email" placeholder="您的邮箱" required>
+                            </div>
+                            <div class="form-group">
+                                <select class="form-control" id="topic" required>
+                                    <option value="" disabled selected>选择留言主题</option>
+                                    <option value="feedback">作品反馈</option>
+                                    <option value="suggestion">改进建议</option>
+                                    <option value="cooperation">合作意向</option>
+                                    <option value="other">其他</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <textarea class="form-control" id="message" placeholder="您的留言内容..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn-submit">提交留言</button>
+                        </form>
+
+                        <div class="message-list" id="messageList">
+                            <div class="message-item">
+                                <span class="message-author">张先生</span>
+                                <span class="message-date">2025-6-15</span>
+                                <div class="message-content">
+                                    非常喜欢你们的剪纸作品，尤其是十二生肖系列，线条流畅，形态生动，体现了传统剪纸艺术的精湛技艺！
+                                </div>
+                            </div>
+
+                            <div class="message-item">
+                                <span class="message-author">王女士</span>
+                                <span class="message-date">2025-6-10</span>
+                                <div class="message-content">
+                                    希望能增加更多教学视频，特别是针对初学者的基础剪纸技巧，期待更新！
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 底部 -->
+        <footer class="py-5">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-8 mx-auto text-center">
+                        <h3 class="footer-title">一纸千华 · 中华瑰宝</h3>
+                        <p class="footer-text">剪纸艺术是中国民间艺术的瑰宝，承载着中华民族深厚的文化底蕴和审美情趣。每一幅剪纸作品都是民间艺人智慧的结晶，是连接过去与未来的文化桥梁。
+                        </p>
+                        <p class="footer-text">让我们共同保护和传承这一非物质文化遗产，让剪纸艺术在新时代绽放更加绚丽的光彩。</p>
+                        <div class="copyright mt-4 pt-3">
+                            <p>© 2025 一纸千华 - 中国传统剪纸艺术传承网</p>
+                            <p>邮箱：contact@paper-art.cn | 电话：010-88889999</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+    </div>
+
+    <script>
+        // 导航栏滚动效果
+        window.addEventListener('scroll', function () {
+            const navbar = document.querySelector('nav');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+
+            // 留言板
+            const messageForm = document.getElementById('messageForm');
+            const messageList = document.getElementById('messageList');
+
+            messageForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                const name = document.getElementById('name').value;
+                const email = document.getElementById('email').value;
+                const topic = document.getElementById('topic').value;
+                const message = document.getElementById('message').value;
+
+                if (!name || !email || !topic || !message) {
+                    alert('请填写所有必填字段！');
+                    return;
+                }
+
+                // 创建新的留言
+                const messageItem = document.createElement('div');
+                messageItem.className = 'message-item';
+
+                const today = new Date();
+                const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+                messageItem.innerHTML = `
+            <span class="message-author">${name}</span>
+            <span class="message-date">${dateStr}</span>
+            <div class="message-content">
+                ${message}
+            </div>
+        `;
+
+                // 添加到留言列表
+                messageList.insertBefore(messageItem, messageList.firstChild);
+
+                messageForm.reset();
+
+                alert('留言提交成功！感谢您的反馈。');
+            });
+        });
+    </script>
+</body>
+
+</html>

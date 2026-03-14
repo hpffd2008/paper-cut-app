@@ -1,0 +1,1 @@
+[{"id":"TASK-1","content":"修复Studio.tsx中阴刻/阳刻/阴阳刻按钮功能 - 实时预览 + 正确渲染","status":"completed","priority":"high"},{"id":"TASK-2","content":"AI剪纸界面接入AI文生图API生成真实剪纸图片","status":"completed","priority":"high"}]
