@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  button {
+    transition: transform 160ms ease, filter 160ms ease, box-shadow 160ms ease;
+  }
+
+  button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: brightness(1.03);
+  }
+
+  button:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+    filter: brightness(0.97);
+  }
+}
