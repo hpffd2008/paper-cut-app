@@ -19,7 +19,6 @@ const STUDIO_TABS: { id: StudioMode; label: string; icon: any; desc: string }[] 
 ];
 
 interface Point { x: number; y: number }
-type FullscreenModeType = 'draw' | 'cut';
 
 const CANVAS_W = 600;
 const CANVAS_H = 600;
@@ -122,7 +121,7 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
   /* NEW states */
   const [showPreview, setShowPreview] = useState(false);
   const [previewDataUrl, setPreviewDataUrl] = useState('');
-  const [fullscreenMode, setFullscreenMode] = useState<FullscreenModeType | null>(null);
+  const [fullscreenMode, setFullscreenMode] = useState(false);
   const [showFinishResult, setShowFinishResult] = useState(false);
   const [finishResultType, setFinishResultType] = useState<'yinke' | 'yangke' | 'yinyangke'>('yinke');
   const [finishDataUrls, setFinishDataUrls] = useState<{ yinke: string; yangke: string; yinyangke: string }>({ yinke: '', yangke: '', yinyangke: '' });
@@ -516,8 +515,13 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
     { id: 'eraser' as const, icon: Eraser, label: '橡皮' },
   ];
 
-  /* ---- Fullscreen Mode ---- */
-  const FS_W = CANVAS_W; const FS_H = CANVAS_H;
+  /* ---- Simulate Paper-cut → open fullscreen cutting mode ---- */
+  const handleSimulatePaperCut = () => {
+    openFullscreenCutting(true);
+  };
+
+  /* ---- Fullscreen Cutting Mode ---- */
+  const FS_W = 800; const FS_H = 800;
 
   const initFullscreenCanvas = useCallback(() => {
     if (!fsOffscreenRef.current) {
@@ -553,45 +557,9 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
     const off = fsOffscreenRef.current;
     if (!c || !off) return;
     const ctx = c.getContext('2d')!;
-    const image = off.getContext('2d')!.getImageData(0, 0, FS_W, FS_H);
-    ctx.putImageData(image, 0, 0);
+    ctx.clearRect(0, 0, FS_W, FS_H);
+    ctx.drawImage(off, 0, 0);
   }, []);
-
-  const syncMainToFs = useCallback(() => {
-    const srcOff = offscreenRef.current;
-    const dstOff = fsOffscreenRef.current;
-    if (!srcOff || !dstOff) return;
-    const srcData = srcOff.getContext('2d')!.getImageData(0, 0, CANVAS_W, CANVAS_H);
-    dstOff.getContext('2d')!.putImageData(srcData, 0, 0);
-  }, []);
-
-  const syncFsToMain = useCallback(() => {
-    const srcOff = fsOffscreenRef.current;
-    const dstOff = offscreenRef.current;
-    if (!srcOff || !dstOff) return;
-    const srcData = srcOff.getContext('2d')!.getImageData(0, 0, FS_W, FS_H);
-    dstOff.getContext('2d')!.putImageData(srcData, 0, 0);
-    syncVisible();
-    saveSnapshot();
-  }, [saveSnapshot, syncVisible]);
-
-  const openFullscreenByTool = useCallback(() => {
-    const mode: FullscreenModeType = tool === 'scissors' ? 'cut' : 'draw';
-    setFullscreenMode(mode);
-    setFsZoom(1);
-    setTimeout(() => {
-      initFullscreenCanvas();
-      syncMainToFs();
-      syncFsVisible();
-      saveFsSnapshot();
-      if (mode === 'cut') renderEngravingPreview(finishResultTypeRef.current);
-    }, 50);
-  }, [initFullscreenCanvas, renderEngravingPreview, saveFsSnapshot, syncFsVisible, syncMainToFs, tool]);
-
-  const closeFullscreen = useCallback(() => {
-    syncFsToMain();
-    setFullscreenMode(null);
-  }, [syncFsToMain]);
 
   /* Render engraving style preview on the visible canvas */
   const renderEngravingPreview = useCallback((mode: 'yinke' | 'yangke' | 'yinyangke') => {
@@ -662,10 +630,7 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
     setFsHistoryIdx(fsSnapIdxRef.current); syncFsVisible();
   }, [syncFsVisible]);
 
-  const handleFsClear = useCallback(() => {
-    initFullscreenCanvas();
-    syncFsToMain();
-  }, [initFullscreenCanvas, syncFsToMain]);
+  const handleFsClear = useCallback(() => { initFullscreenCanvas(); }, [initFullscreenCanvas]);
 
   function fsIsOnEdge(p: Point) { return p.x <= 1 || p.y <= 1 || p.x >= FS_W - 1 || p.y >= FS_H - 1; }
   function fsClampPoint(p: Point): Point { return { x: Math.max(0, Math.min(FS_W, p.x)), y: Math.max(0, Math.min(FS_H, p.y)) }; }
@@ -752,67 +717,55 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
     ctx.restore();
   }, []);
 
-  const handleFsDrawMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleFsMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const pt = getFsCanvasPoint(e);
     if (!pt) return;
     setFsIsDrawing(true);
     fsPointsRef.current = [pt];
-    if (tool === 'eraser') {
-      const off = fsOffscreenRef.current!;
-      const ctx = off.getContext('2d')!;
-      ctx.save();
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.beginPath();
-      ctx.arc(pt.x, pt.y, strokeWidth * 2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-      syncFsVisible();
-    }
   };
 
-  const handleFsDraw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleFsMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const pt = getFsCanvasPoint(e);
     drawFsCursorOverlay(pt);
     if (!fsIsDrawing || !pt) return;
     const pts = fsPointsRef.current;
     pts.push(pt);
-    const off = fsOffscreenRef.current!;
-    const ctx = off.getContext('2d')!;
-    const prev = pts[pts.length - 2];
-    if (tool === 'eraser') {
-      ctx.save();
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.lineWidth = strokeWidth * 4;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.beginPath();
-      ctx.moveTo(prev.x, prev.y);
-      ctx.lineTo(pt.x, pt.y);
-      ctx.stroke();
-      ctx.restore();
-    } else {
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = strokeWidth;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.beginPath();
-      ctx.moveTo(prev.x, prev.y);
-      ctx.lineTo(pt.x, pt.y);
-      ctx.stroke();
-    }
+    // Draw scissors preview path
     syncFsVisible();
+    const c = fullscreenCanvasRef.current!;
+    const ctx = c.getContext('2d')!;
+    ctx.save();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1; ctx.setLineDash([4, 6]);
+    ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+    ctx.restore();
+    const first = pts[0]; const last = pts[pts.length - 1];
+    if (pts.length > 10 && dist(first, last) < CLOSE_THRESHOLD * 2) {
+      ctx.save(); ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 2; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(first.x, first.y, CLOSE_THRESHOLD, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    }
   };
 
-  const handleFsDrawMouseUp = () => {
+  const handleFsMouseUp = () => {
     if (!fsIsDrawing) return;
     setFsIsDrawing(false);
     const pts = fsPointsRef.current;
-    if (pts.length >= 2) saveFsSnapshot();
+    if (pts.length < 2) { fsPointsRef.current = []; return; }
+    const first = pts[0]; const last = pts[pts.length - 1];
+    const startOnEdge = fsIsOnEdge(first); const endOnEdge = fsIsOnEdge(last);
+    const isClosed = (pts.length > 10 && dist(first, last) < CLOSE_THRESHOLD) || (startOnEdge && endOnEdge);
+    if (isClosed && pts.length > 5) { applyFsCut(pts, startOnEdge && endOnEdge); saveFsSnapshot(); }
+    syncFsVisible();
     fsPointsRef.current = [];
   };
 
-  const handleFsDrawMouseLeave = () => {
+  const handleFsMouseLeave = () => {
     drawFsCursorOverlay(null);
   };
 
@@ -942,14 +895,14 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
     return false;
   }, [applyFsCut]);
 
-  const handleFsCutMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleFsWrapMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     const pt = getFsWrapCanvasPoint(e);
     if (!pt) return;
     setFsIsDrawing(true);
     fsPointsRef.current = [pt];
   };
 
-  const handleFsCut = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleFsWrapMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const pt = getFsWrapCanvasPoint(e);
     if (pt && isInsidePaper(pt)) drawFsCursorOverlay(pt);
     else drawFsCursorOverlay(null);
@@ -978,7 +931,7 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
     }
   };
 
-  const handleFsCutMouseUp = () => {
+  const handleFsWrapMouseUp = () => {
     if (!fsIsDrawing) return;
     setFsIsDrawing(false);
     const pts = fsPointsRef.current;
@@ -988,6 +941,31 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
     // After cutting, render with current engraving style preview
     renderEngravingPreview(finishResultTypeRef.current);
     fsPointsRef.current = [];
+  };
+
+  const openFullscreenCutting = (transferDrawing = false) => {
+    setFullscreenMode(true);
+    setFsZoom(1);
+    setTimeout(() => {
+      initFullscreenCanvas();
+      if (transferDrawing && tool === 'pencil') {
+        // Transfer pencil drawings to fullscreen canvas
+        const srcOff = offscreenRef.current;
+        const dstOff = fsOffscreenRef.current;
+        if (srcOff && dstOff) {
+          const dstCtx = dstOff.getContext('2d')!;
+          // Draw main canvas content on top with multiply blend
+          dstCtx.save();
+          dstCtx.globalAlpha = 0.6;
+          const scaleX = FS_W / CANVAS_W;
+          const scaleY = FS_H / CANVAS_H;
+          dstCtx.drawImage(srcOff, 0, 0, CANVAS_W, CANVAS_H, 0, 0, FS_W, FS_H);
+          dstCtx.restore();
+          saveFsSnapshot();
+          syncFsVisible();
+        }
+      }
+    }, 50);
   };
 
   const generateFinishResults = useCallback(() => {
@@ -1168,7 +1146,8 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
                       <RotateCcw className="w-4 h-4" />
                     </button>
                   </div>
-                  <button onClick={openFullscreenByTool} title={tool === 'scissors' ? '全屏裁剪模式' : '全屏绘制模式'}
+                  {/* FEAT-5: Fullscreen button replaces complexity */}
+                  <button onClick={openFullscreenCutting} title="全屏剪纸模式"
                     className="p-2 bg-blue-50 text-blue-700 rounded-full hover:bg-blue-100 transition">
                     <Maximize className="w-4 h-4" />
                   </button>
@@ -1201,6 +1180,13 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
                   </AnimatePresence>
                 </div>
 
+                {/* FEAT-4: Simulate Paper-cut button */}
+                <div className="flex items-center justify-center gap-4 mt-4">
+                  <motion.button whileTap={{ scale: 0.95 }} onClick={handleSimulatePaperCut}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-full hover:from-red-700 hover:to-red-800 transition shadow-lg text-sm font-medium">
+                    <Scissors className="w-4 h-4" />模拟剪纸
+                  </motion.button>
+                </div>
               </div>
             </div>
 
@@ -1283,7 +1269,7 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
           </div>
         </div>
 
-        {/* ================ Fullscreen Mode ================ */}
+        {/* ================ Fullscreen Cutting Mode ================ */}
         <AnimatePresence>
           {fullscreenMode && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -1291,12 +1277,11 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
               {/* Top bar */}
               <div className="bg-white/90 backdrop-blur border-b border-gray-200 px-6 py-3 flex items-center justify-between">
                 <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                  {fullscreenMode === 'cut' ? <Scissors className="w-5 h-5 text-red-600" /> : <Pencil className="w-5 h-5 text-red-600" />}
-                  {fullscreenMode === 'cut' ? '全屏裁剪模式' : '全屏绘制模式'}
+                  <Scissors className="w-5 h-5 text-red-600" />全屏剪纸模式
                 </h2>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-500">{fullscreenMode === 'cut' ? '✂️ 画闭合路径或从纸外穿入穿出裁剪' : '🖊 自由绘制（橡皮工具时为擦除）'}</span>
-                  <button onClick={closeFullscreen}
+                  <span className="text-sm text-gray-500">✂️ 画闭合路径或从纸外穿入穿出裁剪</span>
+                  <button onClick={() => setFullscreenMode(false)}
                     className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition">
                     <X className="w-5 h-5" />
                   </button>
@@ -1307,14 +1292,10 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
               <div className="flex-1 flex items-center justify-center overflow-auto p-4 bg-white/60">
                 <div style={{ transform: `scale(${fsZoom})`, transformOrigin: 'center center' }}>
                   <div className="relative" style={{ padding: '60px' }}
-                    onMouseDown={fullscreenMode === 'cut' ? handleFsCutMouseDown : undefined}
-                    onMouseMove={fullscreenMode === 'cut' ? handleFsCut : undefined}
-                    onMouseUp={fullscreenMode === 'cut' ? handleFsCutMouseUp : undefined}>
+                    onMouseDown={handleFsWrapMouseDown}
+                    onMouseMove={handleFsWrapMouseMove}
+                    onMouseUp={handleFsWrapMouseUp}>
                     <canvas ref={fullscreenCanvasRef} width={FS_W} height={FS_H}
-                      onMouseDown={fullscreenMode === 'draw' ? handleFsDrawMouseDown : undefined}
-                      onMouseMove={fullscreenMode === 'draw' ? handleFsDraw : undefined}
-                      onMouseUp={fullscreenMode === 'draw' ? handleFsDrawMouseUp : undefined}
-                      onMouseLeave={fullscreenMode === 'draw' ? handleFsDrawMouseLeave : undefined}
                       className="rounded-xl shadow-2xl block"
                       style={{ boxShadow: '0 10px 40px rgba(0,0,0,0.15)', cursor: 'none' }} />
                     <canvas ref={fsOverlayRef} width={FS_W} height={FS_H}
@@ -1351,61 +1332,32 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
 
                 <span className="text-sm text-gray-500">{fsHistoryIdx} / {fsHistoryLen - 1}</span>
 
-                {fullscreenMode === 'draw' ? (
-                  <>
-                    <div className="w-px h-8 bg-gray-300 mx-1" />
-                    <span className="text-sm text-gray-600">笔触粗细: {tool === 'eraser' ? strokeWidth * 4 : strokeWidth}px</span>
-                    <input type="range" min="1" max="20" value={strokeWidth}
-                      onChange={(e) => setStrokeWidth(parseInt(e.target.value))} className="w-32 accent-red-600" />
-                    {tool !== 'eraser' && (
-                      <>
-                        <span className="text-sm text-gray-600">笔触颜色</span>
-                        <div className="flex gap-1">
-                          {['#000000', '#ffffff', '#ffeb3b', '#4caf50', '#2196f3'].map((color) => (
-                            <button key={color} onClick={() => setStrokeColor(color)}
-                              className={`w-6 h-6 rounded-full border ${strokeColor === color ? 'border-red-500' : 'border-gray-300'}`}
-                              style={{ backgroundColor: color }} />
-                          ))}
-                        </div>
-                      </>
-                    )}
-                    <span className="text-sm text-gray-600">纸张颜色</span>
-                    <div className="flex gap-1">
-                      {paperColors.slice(0, 6).map((pc) => (
-                        <button key={pc.color} onClick={() => setPaperColor(pc.color)}
-                          className={`w-6 h-6 rounded-full border ${paperColor === pc.color ? 'border-yellow-400' : 'border-gray-300'}`}
-                          style={{ backgroundColor: pc.color }} />
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="w-px h-8 bg-gray-300 mx-1" />
-                    <div className="flex gap-1 bg-gray-100 rounded-full p-1">
-                      {([
-                        { key: 'yinke' as const, label: '阴刻' },
-                        { key: 'yangke' as const, label: '阳刻' },
-                        { key: 'yinyangke' as const, label: '阴阳刻' },
-                      ]).map((t) => (
-                        <button key={t.key} onClick={() => {
-                          setFinishResultType(t.key);
-                          finishResultTypeRef.current = t.key;
-                          renderEngravingPreview(t.key);
-                        }}
-                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${finishResultType === t.key ? 'bg-red-600 text-white shadow' : 'text-gray-600 hover:text-red-600'}`}>
-                          {t.label}
-                        </button>
-                      ))}
-                    </div>
+                <div className="w-px h-8 bg-gray-300 mx-1" />
 
-                    <div className="w-px h-8 bg-gray-300 mx-1" />
+                {/* 阴刻/阳刻/阴阳刻 style buttons */}
+                <div className="flex gap-1 bg-gray-100 rounded-full p-1">
+                  {([
+                    { key: 'yinke' as const, label: '阴刻' },
+                    { key: 'yangke' as const, label: '阳刻' },
+                    { key: 'yinyangke' as const, label: '阴阳刻' },
+                  ]).map((t) => (
+                    <button key={t.key} onClick={() => {
+                      setFinishResultType(t.key);
+                      finishResultTypeRef.current = t.key;
+                      renderEngravingPreview(t.key);
+                    }}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${finishResultType === t.key ? 'bg-red-600 text-white shadow' : 'text-gray-600 hover:text-red-600'}`}>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
 
-                    <motion.button whileTap={{ scale: 0.95 }} onClick={generateFinishResults}
-                      className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-full hover:from-red-700 hover:to-red-800 transition shadow-lg font-medium">
-                      <Check className="w-5 h-5" />完成作品
-                    </motion.button>
-                  </>
-                )}
+                <div className="w-px h-8 bg-gray-300 mx-1" />
+
+                <motion.button whileTap={{ scale: 0.95 }} onClick={generateFinishResults}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-full hover:from-red-700 hover:to-red-800 transition shadow-lg font-medium">
+                  <Check className="w-5 h-5" />完成作品
+                </motion.button>
               </div>
             </motion.div>
           )}
@@ -1455,7 +1407,7 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
                     <Download className="w-5 h-5" />下载作品
                   </motion.button>
                   <motion.button whileTap={{ scale: 0.95 }}
-                    onClick={() => { setShowFinishResult(false); closeFullscreen(); }}
+                    onClick={() => { setShowFinishResult(false); setFullscreenMode(false); }}
                     className="flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-full shadow-lg hover:bg-gray-200 transition font-medium">
                     <X className="w-5 h-5" />关闭
                   </motion.button>
