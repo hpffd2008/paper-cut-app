@@ -274,33 +274,87 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
       else { cx = e.clientX; cy = e.clientY; }
       return { x: (cx - rect.left) * scaleX, y: (cy - rect.top) * scaleY };
     }, []);
+const drawBrushStrokeSegment = useCallback(
+  (ctx: CanvasRenderingContext2D, pts: Point[]) => {
+    if (pts.length < 2) return;
 
-  /* ---- cursor overlay (FEAT-1) ---- */
-  const drawCursorOverlay = useCallback((pt: Point | null) => {
-    const ov = overlayRef.current;
-    if (!ov) return;
-    const ctx = ov.getContext('2d')!;
-    ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+    const last = pts[pts.length - 1];
+    const prev = pts[pts.length - 2];
+
+    if (!smoothCurves || pts.length < 3) {
+      ctx.beginPath();
+      ctx.moveTo(prev.x, prev.y);
+      ctx.lineTo(last.x, last.y);
+      ctx.stroke();
+      return;
+    }
+
+    const prevPrev = pts[pts.length - 3];
+    const midX = (prev.x + last.x) / 2;
+    const midY = (prev.y + last.y) / 2;
+
+    ctx.beginPath();
+    ctx.moveTo((prevPrev.x + prev.x) / 2, (prevPrev.y + prev.y) / 2);
+    ctx.quadraticCurveTo(prev.x, prev.y, midX, midY);
+    ctx.stroke();
+  },
+  [smoothCurves]
+);
+
+const drawCursorIndicator = useCallback(
+  (
+    ctx: CanvasRenderingContext2D,
+    pt: Point | null,
+    activeTool: 'pencil' | 'scissors' | 'eraser'
+  ) => {
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     if (!pt) return;
-    const size = tool === 'eraser' ? strokeWidth * 2 : tool === 'scissors' ? 10 : strokeWidth;
+
+    const size =
+      activeTool === 'eraser'
+        ? strokeWidth * 2
+        : activeTool === 'scissors'
+        ? 10
+        : strokeWidth;
+
     ctx.save();
     ctx.strokeStyle = 'rgba(255,255,255,0.65)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.arc(pt.x, pt.y, size, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.fillStyle = tool === 'eraser' ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)';
+
+    ctx.fillStyle =
+      activeTool === 'eraser'
+        ? 'rgba(255,255,255,0.12)'
+        : 'rgba(255,255,255,0.06)';
     ctx.fill();
-    if (tool === 'scissors') {
+
+    if (activeTool === 'scissors') {
       ctx.strokeStyle = 'rgba(255,255,255,0.45)';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(pt.x - 14, pt.y); ctx.lineTo(pt.x + 14, pt.y);
-      ctx.moveTo(pt.x, pt.y - 14); ctx.lineTo(pt.x, pt.y + 14);
+      ctx.moveTo(pt.x - 14, pt.y);
+      ctx.lineTo(pt.x + 14, pt.y);
+      ctx.moveTo(pt.x, pt.y - 14);
+      ctx.lineTo(pt.x, pt.y + 14);
       ctx.stroke();
     }
+
     ctx.restore();
-  }, [tool, strokeWidth]);
+  },
+  [strokeWidth]
+);
+  /* ---- cursor overlay (FEAT-1) ---- */
+  const drawCursorOverlay = useCallback(
+  (pt: Point | null) => {
+    const ov = overlayRef.current;
+    if (!ov) return;
+    const ctx = ov.getContext('2d')!;
+    drawCursorIndicator(ctx, pt, tool);
+  },
+  [drawCursorIndicator, tool]
+);
 
   /* ---- drawing handlers (FEAT-1, FEAT-2) ---- */
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -322,69 +376,81 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const pt = getCanvasPoint(e);
-    drawCursorOverlay(pt);
-    if (!isDrawing || !pt) return;
-    const pts = pointsRef.current;
-    pts.push(pt);
+  const pt = getCanvasPoint(e);
+  drawCursorOverlay(pt);
+  if (!isDrawing || !pt) return;
 
-    if (tool === 'pencil') {
-      const off = offscreenRef.current!;
-      const ctx = off.getContext('2d')!;
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = strokeWidth;
-      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      const prev = pts[pts.length - 2];
-      if (smoothCurves && pts.length >= 4) {
-        // Catmull-Rom smoothing: use last 4 points
-        const p0 = pts[pts.length - 4] || prev;
-        const p1 = pts[pts.length - 3] || prev;
-        const p2 = pts[pts.length - 2];
-        const p3 = pt;
-        const cp1x = p1.x + (p2.x - p0.x) / 6;
-        const cp1y = p1.y + (p2.y - p0.y) / 6;
-        const cp2x = p2.x - (p3.x - p1.x) / 6;
-        const cp2y = p2.y - (p3.y - p1.y) / 6;
-        ctx.beginPath(); ctx.moveTo(p1.x, p1.y);
-        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
-        ctx.stroke();
-      } else {
-        ctx.beginPath(); ctx.moveTo(prev.x, prev.y); ctx.lineTo(pt.x, pt.y); ctx.stroke();
-      }
-      syncVisible();
-    } else if (tool === 'eraser') {
-      const off = offscreenRef.current!;
-      const ctx = off.getContext('2d')!;
+  const pts = pointsRef.current;
+  pts.push(pt);
+
+  if (tool === 'pencil') {
+    const off = offscreenRef.current!;
+    const ctx = off.getContext('2d')!;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = strokeWidth;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    drawBrushStrokeSegment(ctx, pts);
+    syncVisible();
+    return;
+  }
+
+  if (tool === 'eraser') {
+    const off = offscreenRef.current!;
+    const ctx = off.getContext('2d')!;
+    const prev = pts[pts.length - 2];
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineWidth = strokeWidth * 4;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(prev.x, prev.y);
+    ctx.lineTo(pt.x, pt.y);
+    ctx.stroke();
+    ctx.restore();
+    syncVisible();
+    return;
+  }
+
+  if (tool === 'scissors') {
+    syncVisible();
+    const vis = canvasRef.current!;
+    const ctx = vis.getContext('2d')!;
+    ctx.save();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 6]);
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+    ctx.restore();
+
+    const first = pts[0];
+    const last = pts[pts.length - 1];
+    if (pts.length > 10 && dist(first, last) < CLOSE_THRESHOLD * 2) {
       ctx.save();
-      ctx.globalCompositeOperation = 'destination-out';
-      const prev = pts[pts.length - 2];
-      ctx.lineWidth = strokeWidth * 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      ctx.beginPath(); ctx.moveTo(prev.x, prev.y); ctx.lineTo(pt.x, pt.y); ctx.stroke();
-      ctx.restore();
-      syncVisible();
-    } else if (tool === 'scissors') {
-      syncVisible();
-      const vis = canvasRef.current!;
-      const ctx = vis.getContext('2d')!;
-      ctx.save();
-      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
-      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-      ctx.stroke();
-      ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1; ctx.setLineDash([4, 6]);
-      ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
-      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.arc(first.x, first.y, CLOSE_THRESHOLD, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
-      const first = pts[0]; const last = pts[pts.length - 1];
-      if (pts.length > 10 && dist(first, last) < CLOSE_THRESHOLD * 2) {
-        ctx.save(); ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 2; ctx.setLineDash([]);
-        ctx.beginPath(); ctx.arc(first.x, first.y, CLOSE_THRESHOLD, 0, Math.PI * 2); ctx.stroke();
-        ctx.restore();
-      }
     }
-  };
+  }
+};
 
   const handleMouseUp = () => {
     if (!isDrawing) return;
@@ -515,7 +581,7 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
     { id: 'scissors' as const, icon: Scissors, label: '剪刀' },
     { id: 'eraser' as const, icon: Eraser, label: '橡皮' },
   ];
-
+const showSizeControl = tool === 'pencil' || tool === 'eraser';
   /* ---- Fullscreen Mode ---- */
   const FS_W = CANVAS_W; const FS_H = CANVAS_H;
 
@@ -733,24 +799,15 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
       return { x: (cx - rect.left) * (FS_W / rect.width), y: (cy - rect.top) * (FS_H / rect.height) };
     }, []);
 
-  const drawFsCursorOverlay = useCallback((pt: Point | null) => {
+  const drawFsCursorOverlay = useCallback(
+  (pt: Point | null) => {
     const ov = fsOverlayRef.current;
     if (!ov) return;
     const ctx = ov.getContext('2d')!;
-    ctx.clearRect(0, 0, FS_W, FS_H);
-    if (!pt) return;
-    ctx.save();
-    ctx.strokeStyle = 'rgba(255,255,255,0.65)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.arc(pt.x, pt.y, 10, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(pt.x - 14, pt.y); ctx.lineTo(pt.x + 14, pt.y);
-    ctx.moveTo(pt.x, pt.y - 14); ctx.lineTo(pt.x, pt.y + 14);
-    ctx.stroke();
-    ctx.restore();
-  }, []);
+    drawCursorIndicator(ctx, pt, tool);
+  },
+  [drawCursorIndicator, tool]
+);
 
   const handleFsDrawMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const pt = getFsCanvasPoint(e);
@@ -771,38 +828,44 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
   };
 
   const handleFsDraw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const pt = getFsCanvasPoint(e);
-    drawFsCursorOverlay(pt);
-    if (!fsIsDrawing || !pt) return;
-    const pts = fsPointsRef.current;
-    pts.push(pt);
+  const pt = getFsCanvasPoint(e);
+  drawFsCursorOverlay(pt);
+  if (!fsIsDrawing || !pt) return;
+
+  const pts = fsPointsRef.current;
+  pts.push(pt);
+
+  if (tool === 'pencil') {
+    const off = fsOffscreenRef.current!;
+    const ctx = off.getContext('2d')!;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = strokeWidth;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    drawBrushStrokeSegment(ctx, pts);
+    syncFsVisible();
+    return;
+  }
+
+  if (tool === 'eraser') {
     const off = fsOffscreenRef.current!;
     const ctx = off.getContext('2d')!;
     const prev = pts[pts.length - 2];
-    if (tool === 'eraser') {
-      ctx.save();
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.lineWidth = strokeWidth * 4;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.beginPath();
-      ctx.moveTo(prev.x, prev.y);
-      ctx.lineTo(pt.x, pt.y);
-      ctx.stroke();
-      ctx.restore();
-    } else {
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = strokeWidth;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.beginPath();
-      ctx.moveTo(prev.x, prev.y);
-      ctx.lineTo(pt.x, pt.y);
-      ctx.stroke();
-    }
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineWidth = strokeWidth * 4;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(prev.x, prev.y);
+    ctx.lineTo(pt.x, pt.y);
+    ctx.stroke();
+    ctx.restore();
     syncFsVisible();
-  };
+    return;
+  }
+};
 
   const handleFsDrawMouseUp = () => {
     if (!fsIsDrawing) return;
@@ -1085,13 +1148,21 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
                     {tool === 'eraser' && '🧹 擦除画布上的内容'}
                   </p>
                 </div>
-                <div className="mt-4">
-                  <label className="text-sm text-gray-600 mb-2 block">
-                    {tool === 'eraser' ? '橡皮大小' : '笔触粗细'}: {tool === 'eraser' ? strokeWidth * 4 : strokeWidth}px
-                  </label>
-                  <input type="range" min="1" max="20" value={strokeWidth}
-                    onChange={(e) => setStrokeWidth(parseInt(e.target.value))} className="w-full accent-red-600" />
-                </div>
+        {showSizeControl && (
+           <div className="mt-4">
+            <label className="text-sm text-gray-600 mb-2 block">
+              {tool === 'eraser' ? '橡皮大小' : '笔触粗细'}: {tool === 'eraser' ? strokeWidth * 4 : strokeWidth}px
+            </label>
+            <input
+              type="range"
+              min="1"
+              max="20"
+              value={strokeWidth}
+              onChange={(e) => setStrokeWidth(parseInt(e.target.value))}
+              className="w-full accent-red-600"
+            />
+         </div>
+        )}
                 {tool === 'pencil' && (
                   <div className="mt-4">
                     <label className="text-sm text-gray-600 mb-2 block">笔触颜色</label>
