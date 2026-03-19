@@ -81,11 +81,6 @@ useEffect(() => {
     return;
   }
 
-  if (pendingAiInputImage) {
-    alert('当前前端已接入输入图片，但后端尚未接通图生图能力');
-    return;
-  }
-
   setIsGenerating(true);
   setGeneratedImage(null);
 
@@ -99,8 +94,9 @@ useEffect(() => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        mode: 'text-to-image',
+        mode: pendingAiInputImage ? 'image-to-image' : 'text-to-image',
         prompt: `主题：${prompt}；风格偏好：${stylePromptMap[selectedStyle] || selectedStyle}；颜色偏好：${selectedColor}；复杂度：${complexity}`,
+        inputImage: pendingAiInputImage?.dataUrl ?? null,
       }),
     });
 
