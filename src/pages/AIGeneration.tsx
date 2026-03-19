@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Wand2, Sparkles, Image, Download, RefreshCw, Save,
@@ -35,7 +35,12 @@ interface GeneratedWork {
   imageUrl: string;
   createdAt: Date;
 }
-
+interface PendingAiInputImagePayload {
+  source: 'studio' | 'upload';
+  mimeType: string;
+  dataUrl: string;
+  createdAt: number;
+}
 export default function AIGeneration() {
   const [prompt, setPrompt] = useState('');
   const [selectedStyle, setSelectedStyle] = useState('traditional');
@@ -45,63 +50,92 @@ export default function AIGeneration() {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [history, setHistory] = useState<GeneratedWork[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [pendingAiInputImage, setPendingAiInputImage] = useState<PendingAiInputImagePayload | null>(null);
+  const [inputImagePreviewUrl, setInputImagePreviewUrl] = useState<string | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
+useEffect(() => {
+  const raw = sessionStorage.getItem('pendingAiInputImage');
+  if (!raw) return;
 
+  try {
+    const parsed = JSON.parse(raw) as PendingAiInputImagePayload;
+    if (
+      parsed &&
+      typeof parsed.dataUrl === 'string' &&
+      typeof parsed.mimeType === 'string' &&
+      (parsed.source === 'studio' || parsed.source === 'upload')
+    ) {
+      setPendingAiInputImage(parsed);
+      setInputImagePreviewUrl(parsed.dataUrl);
+    }
+  } catch (error) {
+    console.error('读取 pendingAiInputImage 失败：', error);
+  } finally {
+    sessionStorage.removeItem('pendingAiInputImage');
+  }
+}, []);
   const handleGenerate = async () => {
-    if (!prompt.trim()) {
-      alert('请输入剪纸描述');
+  if (!prompt.trim() && !pendingAiInputImage) {
+    alert('请输入剪纸描述');
+    return;
+  }
+
+  if (pendingAiInputImage) {
+    alert('当前前端已接入输入图片，但后端尚未接通图生图能力');
+    return;
+  }
+
+  setIsGenerating(true);
+  setGeneratedImage(null);
+
+  try {
+    const endpoint =
+      window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:3000/generate'
+        : '/api/generate';
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: 'text-to-image',
+        prompt: `主题：${prompt}；风格偏好：${stylePromptMap[selectedStyle] || selectedStyle}；颜色偏好：${selectedColor}；复杂度：${complexity}`,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.image) {
+      console.error('后端返回：', data);
+      alert(
+        data?.detail?.message ||
+        data?.detail?.code ||
+        data?.error ||
+        '生成失败'
+      );
       return;
     }
 
-    setIsGenerating(true);
-    setGeneratedImage(null);
+    setGeneratedImage(data.image);
 
-    try {
-      const endpoint =
-        window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-          ? 'http://localhost:3000/generate'
-          : '/api/generate';
+    const newWork: GeneratedWork = {
+      id: Date.now().toString(),
+      prompt,
+      style: selectedStyle,
+      color: selectedColor,
+      imageUrl: data.image,
+      createdAt: new Date(),
+    };
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: `主题：${prompt}；风格偏好：${stylePromptMap[selectedStyle] || selectedStyle}；颜色偏好：${selectedColor}；复杂度：${complexity}`,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.image) {
-        console.error('后端返回：', data);
-        alert(
-          data?.detail?.message ||
-          data?.detail?.code ||
-          data?.error ||
-          '生成失败'
-        );
-        return;
-      }
-
-      setGeneratedImage(data.image);
-
-      const newWork: GeneratedWork = {
-        id: Date.now().toString(),
-        prompt,
-        style: selectedStyle,
-        color: selectedColor,
-        imageUrl: data.image,
-        createdAt: new Date(),
-      };
-
-      setHistory((prev) => [newWork, ...prev]);
-    } catch (error) {
-      console.error(error);
-      alert('请求失败，请确认后端已启动');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+    setHistory((prev) => [newWork, ...prev]);
+  } catch (error) {
+    console.error(error);
+    alert('请求失败，请确认后端已启动');
+  } finally {
+    setIsGenerating(false);
+  }
+};
 
   const handleSave = () => {
     if (generatedImage) {
@@ -121,7 +155,37 @@ export default function AIGeneration() {
   const handleDeleteHistory = (id: string) => {
     setHistory((prev) => prev.filter((item) => item.id !== id));
   };
+const handleUploadInputImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
 
+  if (!file.type.startsWith('image/')) {
+    alert('当前只支持图片上传');
+    e.target.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const dataUrl = reader.result as string;
+
+    setPendingAiInputImage({
+      source: 'upload',
+      mimeType: file.type || 'image/png',
+      dataUrl,
+      createdAt: Date.now(),
+    });
+    setInputImagePreviewUrl(dataUrl);
+  };
+
+  reader.readAsDataURL(file);
+  e.target.value = '';
+};
+
+const handleRemoveInputImage = () => {
+  setPendingAiInputImage(null);
+  setInputImagePreviewUrl(null);
+};
   const suggestions = [
     '龙凤呈祥，寓意吉祥',
     '双喜临门，喜庆风格',
@@ -162,7 +226,49 @@ export default function AIGeneration() {
               rows={4}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
             />
+            <div className="mt-3">
+  <input
+    ref={uploadInputRef}
+    type="file"
+    accept="image/*"
+    onChange={handleUploadInputImage}
+    className="hidden"
+  />
 
+  <div className="flex items-center gap-2">
+    <button
+      onClick={() => uploadInputRef.current?.click()}
+      className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+    >
+      {pendingAiInputImage ? '替换图片' : '上传图片附件'}
+    </button>
+
+    {pendingAiInputImage && (
+      <button
+        onClick={handleRemoveInputImage}
+        className="text-xs px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-lg hover:text-red-600 hover:border-red-200 transition"
+      >
+        移除图片
+      </button>
+    )}
+  </div>
+</div>
+
+{inputImagePreviewUrl && pendingAiInputImage && (
+  <div className="mt-3 p-2 border border-gray-200 rounded-lg bg-gray-50 flex items-center gap-3">
+    <img
+      src={inputImagePreviewUrl}
+      alt="输入附件"
+      className="w-14 h-14 object-cover rounded-md border border-gray-200"
+    />
+    <div className="flex-1 min-w-0">
+      <p className="text-xs text-gray-700 font-medium">待处理图片附件</p>
+      <p className="text-xs text-gray-500 truncate">
+        来源：{pendingAiInputImage.source === 'studio' ? '来自创作室' : '本地上传'}
+      </p>
+    </div>
+  </div>
+)}
             <div className="mt-4">
               <p className="text-sm text-gray-500 mb-2">快速提示：</p>
               <div className="flex flex-wrap gap-2">

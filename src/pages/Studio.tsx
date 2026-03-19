@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
   Scissors, Pencil, Eraser, Undo2, Redo2, Save, Share2,
   Palette, Settings, Volume2, VolumeX, Users, Sparkles,
@@ -97,6 +98,7 @@ function DuiZheStudio() {
 /*  SingleFoldStudio – main component                               */
 /* ================================================================ */
 function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMode; setStudioMode: (m: StudioMode) => void }) {
+  const navigate = useNavigate();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const offscreenRef = useRef<HTMLCanvasElement | null>(null);
@@ -564,6 +566,26 @@ const drawCursorIndicator = useCallback(
       }
     }
   };
+const handleSubmitToAI = () => {
+  const canvas = canvasRef.current;
+  if (!canvas) {
+    alert('当前画布不可用，请稍后再试');
+    return;
+  }
+
+  const dataUrl = canvas.toDataURL('image/png');
+
+  sessionStorage.setItem(
+    'pendingAiInputImage',
+    JSON.stringify({
+      source: 'studio',
+      mimeType: 'image/png',
+      dataUrl,
+      createdAt: Date.now(),
+    })
+  );
+  navigate('/ai-generation');
+};
 
   const handlePublish = () => {
     if (!isLoggedIn) { alert('请先登录'); return; }
@@ -1237,6 +1259,13 @@ const showSizeControl = tool === 'pencil' || tool === 'eraser';
                     <button onClick={handleClearCanvas} title="清空画布"
                       className="p-2 rounded-lg bg-gray-100 hover:bg-red-100 text-gray-600 hover:text-red-600 transition">
                       <RotateCcw className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={handleSubmitToAI}
+                      title="提交到 AI"
+                      className="px-3 py-2 rounded-full text-sm transition bg-purple-50 text-purple-700 hover:bg-purple-100"
+                    >
+                      提交到 AI
                     </button>
                   </div>
                   <button onClick={openFullscreenByTool} title={tool === 'scissors' ? '全屏裁剪模式' : '全屏绘制模式'}
