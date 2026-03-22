@@ -21,6 +21,12 @@ const STUDIO_TABS: { id: StudioMode; label: string; icon: any; desc: string }[] 
 
 interface Point { x: number; y: number }
 type FullscreenModeType = 'draw' | 'cut';
+interface PendingStudioImportPayload {
+  source: 'ai-generation';
+  mimeType: string;
+  dataUrl: string;
+  createdAt: number;
+}
 
 const CANVAS_W = 600;
 const CANVAS_H = 600;
@@ -47,9 +53,74 @@ const backgrounds = [
 ];
 
 /* helpers */
-function dist(a: Point, b: Point) { return Math.hypot(a.x - b.x, a.y - b.y); }
+/* helpers */
+function dist(a: Point, b: Point) { return Math.hypot(a.x - b.x); }
 function isOnEdge(p: Point) { return p.x <= 1 || p.y <= 1 || p.x >= CANVAS_W - 1 || p.y >= CANVAS_H - 1; }
 function clampPoint(p: Point): Point { return { x: Math.max(0, Math.min(CANVAS_W, p.x)), y: Math.max(0, Math.min(CANVAS_H, p.y)) }; }
+function buildPapercutFinishCanvas(sourceCanvas: HTMLCanvasElement, paperColor: string): HTMLCanvasElement | null {
+  const srcCtx = sourceCanvas.getContext('2d');
+  if (!srcCtx) return null;
+
+  const result = document.createElement('canvas');
+  result.width = sourceCanvas.width;
+  result.height = sourceCanvas.height;
+
+  const resultCtx = result.getContext('2d');
+  if (!resultCtx) return null;
+
+  const srcImage = srcCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+  const output = resultCtx.createImageData(sourceCanvas.width, sourceCanvas.height);
+
+  const hex = paperColor.replace('#', '');
+  const fullHex = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex;
+  const paperInt = parseInt(fullHex, 16);
+  const paperR = (paperInt >> 16) & 255;
+  const paperG = (paperInt >> 8) & 255;
+  const paperB = paperInt & 255;
+
+  for (let i = 0; i < srcImage.data.length; i += 4) {
+    const alpha = srcImage.data[i + 3];
+
+    if (alpha === 0) {
+      output.data[i] = 0;
+      output.data[i + 1] = 0;
+      output.data[i + 2] = 0;
+      output.data[i + 3] = 0;
+      continue;
+    }
+
+    output.data[i] = paperR;
+    output.data[i + 1] = paperG;
+    output.data[i + 2] = paperB;
+    output.data[i + 3] = alpha;
+  }
+
+  resultCtx.putImageData(output, 0, 0);
+  return result;
+}
+function hexToRgb(hex: string): [number, number, number] {
+  const normalized = hex.replace('#', '');
+  const full = normalized.length === 3
+    ? normalized.split('').map((c) => c + c).join('')
+    : normalized;
+  const value = parseInt(full, 16);
+  return [
+    (value >> 16) & 255,
+    (value >> 8) & 255,
+    value & 255,
+  ];
+}
+
+function clampChannel(value: number): number {
+  return Math.max(0, Math.min(255, Math.round(value)));
+}
+
+function colorDistance(
+  r1: number, g1: number, b1: number,
+  r2: number, g2: number, b2: number
+): number {
+  return Math.hypot(r1 - r2, g1 - g2, b1 - b2);
+}
 
 /* ------------------------------------------------------------------ */
 export default function Studio() {
@@ -126,6 +197,17 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
   const [previewDataUrl, setPreviewDataUrl] = useState('');
   const [fullscreenMode, setFullscreenMode] = useState<FullscreenModeType | null>(null);
   const [showFinishResult, setShowFinishResult] = useState(false);
+  const getFinishSourceCanvas = useCallback(() => {
+  if (fullscreenMode === 'cut' && fsOffscreenRef.current) {
+    return fsOffscreenRef.current;
+  }
+
+  if (offscreenRef.current) {
+    return offscreenRef.current;
+  }
+
+  return canvasRef.current;
+}, [fullscreenMode]);
   const [finishResultType, setFinishResultType] = useState<'yinke' | 'yangke' | 'yinyangke'>('yinke');
   const [finishDataUrls, setFinishDataUrls] = useState<{ yinke: string; yangke: string; yinyangke: string }>({ yinke: '', yangke: '', yinyangke: '' });
   const fullscreenCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -147,7 +229,52 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
   } = useCanvasStore();
   const { isLoggedIn, addWork } = useUserStore();
   const templates = getTemplates();
+  const recolorPaperOnCanvas = useCallback((
+    targetCanvas: HTMLCanvasElement | null,
+    fromColor: string,
+    toColor: string
+  ) => {
+    if (!targetCanvas || fromColor === toColor) return false;
 
+    const ctx = targetCanvas.getContext('2d');
+    if (!ctx) return false;
+
+    const { width, height } = targetCanvas;
+    const image = ctx.getImageData(0, 0, width, height);
+    const data = image.data;
+
+    const [fromR, fromG, fromB] = hexToRgb(fromColor);
+    const [toR, toG, toB] = hexToRgb(toColor);
+    const fromLuma = (fromR + fromG + fromB) / 3;
+
+    let changed = false;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const alpha = data[i + 3];
+      if (alpha === 0) continue;
+
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+
+      // 只替换“接近旧纸张颜色”的像素，避免伤到笔迹/图片
+      if (colorDistance(r, g, b, fromR, fromG, fromB) <= 40) {
+        const currentLuma = (r + g + b) / 3;
+        const delta = currentLuma - fromLuma;
+
+        data[i] = clampChannel(toR + delta);
+        data[i + 1] = clampChannel(toG + delta);
+        data[i + 2] = clampChannel(toB + delta);
+
+        changed = true;
+      }
+    }
+
+    if (!changed) return false;
+
+    ctx.putImageData(image, 0, 0);
+    return true;
+  }, []);
   /* ---- offscreen bootstrap ---- */
   useEffect(() => {
     if (!offscreenRef.current) {
@@ -158,12 +285,9 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
     drawInitialPaper();
   }, []);
 
-  useEffect(() => {
-    if (snapshotsRef.current.length <= 1) drawInitialPaper();
-  }, [paperColor]);
 
   const drawInitialPaper = useCallback(() => {
-    const off = offscreenRef.current;
+   const off = offscreenRef.current!;
     if (!off) return;
     const ctx = off.getContext('2d')!;
     ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
@@ -262,7 +386,72 @@ function SingleFoldStudio({ studioMode, setStudioMode }: { studioMode: StudioMod
     setHistoryIdx(0);
     syncVisible();
   }, [paperColor, setTemplate, syncVisible]);
+  const drawImportedImageToCanvas = useCallback((img: HTMLImageElement) => {
+  const offscreen = offscreenRef.current;
+  if (!offscreen) return false;
 
+  const ctx = offscreen.getContext('2d');
+  if (!ctx) return false;
+
+  const canvasWidth = offscreen.width;
+  const canvasHeight = offscreen.height;
+
+  const scale = Math.min(canvasWidth / img.width, canvasHeight / img.height);
+  const drawWidth = img.width * scale;
+  const drawHeight = img.height * scale;
+  const dx = (canvasWidth - drawWidth) / 2;
+  const dy = (canvasHeight - drawHeight) / 2;
+
+  ctx.drawImage(img, dx, dy, drawWidth, drawHeight);
+  syncVisible();
+  saveSnapshot();
+
+  return true;
+}, [saveSnapshot, syncVisible]);
+useEffect(() => {
+  const rawPayload = sessionStorage.getItem('pendingStudioImportImage');
+  if (!rawPayload) return;
+
+  let payload: PendingStudioImportPayload;
+
+  try {
+    payload = JSON.parse(rawPayload) as PendingStudioImportPayload;
+  } catch (error) {
+    console.error('解析 pendingStudioImportImage 失败：', error);
+    sessionStorage.removeItem('pendingStudioImportImage');
+    return;
+  }
+
+  if (
+    !payload ||
+    payload.source !== 'ai-generation' ||
+    typeof payload.dataUrl !== 'string' ||
+    typeof payload.mimeType !== 'string'
+  ) {
+    sessionStorage.removeItem('pendingStudioImportImage');
+    return;
+  }
+
+  const img = new Image();
+
+  img.onload = () => {
+    try {
+      handleClearCanvas();
+      drawImportedImageToCanvas(img);
+    } catch (error) {
+      console.error('导入创作室图片失败：', error);
+    } finally {
+      sessionStorage.removeItem('pendingStudioImportImage');
+    }
+  };
+
+  img.onerror = () => {
+    console.error('导入创作室图片加载失败');
+    sessionStorage.removeItem('pendingStudioImportImage');
+  };
+
+  img.src = payload.dataUrl;
+}, [drawImportedImageToCanvas, handleClearCanvas]);
   /* ---- coordinates ---- */
   const getCanvasPoint = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>): Point | null => {
@@ -667,7 +856,7 @@ const showSizeControl = tool === 'pencil' || tool === 'eraser';
   const renderEngravingPreview = useCallback((mode: 'yinke' | 'yangke' | 'yinyangke') => {
     const c = fullscreenCanvasRef.current;
     const off = fsOffscreenRef.current;
-    if (!c || !off) return;
+  if (!c || !off) return;
     const ctx = c.getContext('2d')!;
     ctx.clearRect(0, 0, FS_W, FS_H);
 
@@ -717,7 +906,38 @@ const showSizeControl = tool === 'pencil' || tool === 'eraser';
     fsSnapIdxRef.current = arr.length - 1;
     setFsHistoryLen(arr.length); setFsHistoryIdx(arr.length - 1);
   }, []);
+  const handlePaperColorChange = useCallback((nextColor: string) => {
+    if (nextColor === paperColor) return;
 
+    const prevColor = paperColor;
+    setPaperColor(nextColor);
+
+    const mainChanged = recolorPaperOnCanvas(offscreenRef.current, prevColor, nextColor);
+    if (mainChanged) {
+      syncVisible();
+      saveSnapshot();
+    }
+
+    const fsChanged = recolorPaperOnCanvas(fsOffscreenRef.current, prevColor, nextColor);
+    if (fsChanged) {
+      syncFsVisible();
+      saveFsSnapshot();
+
+      if (fullscreenMode === 'cut') {
+        renderEngravingPreview(finishResultTypeRef.current);
+      }
+    }
+  }, [
+    fullscreenMode,
+    paperColor,
+    recolorPaperOnCanvas,
+    renderEngravingPreview,
+    saveFsSnapshot,
+    saveSnapshot,
+    setPaperColor,
+    syncFsVisible,
+    syncVisible,
+  ]);
   const openFullscreenByTool = useCallback(() => {
     const mode: FullscreenModeType = tool === 'scissors' ? 'cut' : 'draw';
     setFullscreenMode(mode);
@@ -1076,55 +1296,72 @@ const showSizeControl = tool === 'pencil' || tool === 'eraser';
   };
 
   const generateFinishResults = useCallback(() => {
-    const off = fsOffscreenRef.current;
-    if (!off) return;
+  const src = fsOffscreenRef.current ?? offscreenRef.current ?? canvasRef.current;
+  if (!src) return;
 
-    // 阴刻 (yinke) = current paper with holes (transparent where cut)
-    const yinkeUrl = off.toDataURL();
+  const papercutCanvas = buildPapercutFinishCanvas(src, paperColor);
+  if (!papercutCanvas) return;
 
-    // 阳刻 (yangke) = only the cut-away parts filled with paper color
-    const tmpYang = document.createElement('canvas');
-    tmpYang.width = FS_W; tmpYang.height = FS_H;
-    const yctx = tmpYang.getContext('2d')!;
-    // Start with full paper color
-    yctx.fillStyle = paperColor;
-    yctx.fillRect(0, 0, FS_W, FS_H);
-    // Subtract the remaining paper (show only holes as solid)
-    yctx.globalCompositeOperation = 'destination-out';
-    yctx.drawImage(off, 0, 0);
-    // Also add yangke with light background for better visibility in results
-    const tmpYangBg = document.createElement('canvas');
-    tmpYangBg.width = FS_W; tmpYangBg.height = FS_H;
-    const ybgCtx = tmpYangBg.getContext('2d')!;
-    ybgCtx.fillStyle = '#faf6f0';
-    ybgCtx.fillRect(0, 0, FS_W, FS_H);
-    ybgCtx.drawImage(tmpYang, 0, 0);
-    const yangkeUrl = tmpYangBg.toDataURL();
+  const yinkeUrl = papercutCanvas.toDataURL();
 
-    // 阴阳刻 (yinyangke) = combine both techniques with contrasting colors
-    const tmpYY = document.createElement('canvas');
-    tmpYY.width = FS_W; tmpYY.height = FS_H;
-    const yyctx = tmpYY.getContext('2d')!;
-    // Warm background
-    yyctx.fillStyle = '#fdf5e6';
-    yyctx.fillRect(0, 0, FS_W, FS_H);
-    // Draw yangke (cut areas) with gold-brown contrasting color
-    const tmpYYang = document.createElement('canvas');
-    tmpYYang.width = FS_W; tmpYYang.height = FS_H;
-    const yyangCtx = tmpYYang.getContext('2d')!;
-    yyangCtx.fillStyle = '#c9963a';
-    yyangCtx.fillRect(0, 0, FS_W, FS_H);
-    yyangCtx.globalCompositeOperation = 'destination-out';
-    yyangCtx.drawImage(off, 0, 0);
-    yyctx.drawImage(tmpYYang, 0, 0);
-    // Draw yinke (remaining paper) on top
-    yyctx.drawImage(off, 0, 0);
-    const yinyangkeUrl = tmpYY.toDataURL();
+  // 阳刻 (yangke) = 只显示被剪掉的部分
+  const tmpYang = document.createElement('canvas');
+  tmpYang.width = papercutCanvas.width;
+  tmpYang.height = papercutCanvas.height;
+  const yctx = tmpYang.getContext('2d');
+  if (!yctx) return;
 
-    setFinishDataUrls({ yinke: yinkeUrl, yangke: yangkeUrl, yinyangke: yinyangkeUrl });
-    // Preserve the user's selected engraving type instead of overriding
-    setShowFinishResult(true);
-  }, [paperColor]);
+  yctx.fillStyle = paperColor;
+  yctx.fillRect(0, 0, tmpYang.width, tmpYang.height);
+  yctx.globalCompositeOperation = 'destination-out';
+  yctx.drawImage(papercutCanvas, 0, 0);
+
+  const tmpYangBg = document.createElement('canvas');
+  tmpYangBg.width = papercutCanvas.width;
+  tmpYangBg.height = papercutCanvas.height;
+  const ybgCtx = tmpYangBg.getContext('2d');
+  if (!ybgCtx) return;
+
+  ybgCtx.fillStyle = '#faf6f0';
+  ybgCtx.fillRect(0, 0, tmpYangBg.width, tmpYangBg.height);
+  ybgCtx.drawImage(tmpYang, 0, 0);
+  const yangkeUrl = tmpYangBg.toDataURL();
+
+  // 阴阳刻 (yinyangke) = 保留纸面 + 用对比色显示剪掉部分
+  const tmpYY = document.createElement('canvas');
+  tmpYY.width = papercutCanvas.width;
+  tmpYY.height = papercutCanvas.height;
+  const yyctx = tmpYY.getContext('2d');
+  if (!yyctx) return;
+
+  yyctx.fillStyle = '#fdf5e6';
+  yyctx.fillRect(0, 0, tmpYY.width, tmpYY.height);
+
+  const tmpYYang = document.createElement('canvas');
+  tmpYYang.width = papercutCanvas.width;
+  tmpYYang.height = papercutCanvas.height;
+  const yyangCtx = tmpYYang.getContext('2d');
+  if (!yyangCtx) return;
+
+  yyangCtx.fillStyle = '#c9963a';
+  yyangCtx.fillRect(0, 0, tmpYYang.width, tmpYYang.height);
+  yyangCtx.globalCompositeOperation = 'destination-out';
+  yyangCtx.drawImage(papercutCanvas, 0, 0);
+
+  yyctx.drawImage(tmpYYang, 0, 0);
+  yyctx.drawImage(papercutCanvas, 0, 0);
+
+  const yinyangkeUrl = tmpYY.toDataURL();
+
+  setFinishDataUrls({
+    yinke: yinkeUrl,
+    yangke: yangkeUrl,
+    yinyangke: yinyangkeUrl,
+  });
+  setFinishResultType('yinke');
+  finishResultTypeRef.current = 'yinke';
+  setShowFinishResult(true);
+}, [paperColor]);
 
   /* ================================================================ */
   /*  RENDER                                                          */
@@ -1216,7 +1453,7 @@ const showSizeControl = tool === 'pencil' || tool === 'eraser';
                   <label className="text-sm text-gray-600 mb-2 block">纸张颜色</label>
                   <div className="grid grid-cols-4 gap-2">
                     {paperColors.map((pc) => (
-                      <button key={pc.color} onClick={() => setPaperColor(pc.color)}
+                      <button key={pc.color} onClick={() => handlePaperColorChange(pc.color)}
                         className={`w-full aspect-square rounded-lg border-2 transition relative group ${paperColor === pc.color ? 'border-yellow-400 scale-105' : 'border-transparent'}`}
                         style={{ backgroundColor: pc.color }}>
                         <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/30 rounded-lg text-white text-xs">{pc.name}</span>
@@ -1447,65 +1684,26 @@ const showSizeControl = tool === 'pencil' || tool === 'eraser';
                   <RotateCcw className="w-5 h-5" />
                 </button>
 
-                <div className="w-px h-8 bg-gray-300 mx-1" />
-
-                <span className="text-sm text-gray-500">{fsHistoryIdx} / {fsHistoryLen - 1}</span>
-
                 {fullscreenMode === 'draw' ? (
-                  <>
-                    <div className="w-px h-8 bg-gray-300 mx-1" />
-                    <span className="text-sm text-gray-600">笔触粗细: {tool === 'eraser' ? strokeWidth * 4 : strokeWidth}px</span>
-                    <input type="range" min="1" max="20" value={strokeWidth}
-                      onChange={(e) => setStrokeWidth(parseInt(e.target.value))} className="w-32 accent-red-600" />
-                    {tool !== 'eraser' && (
-                      <>
-                        <span className="text-sm text-gray-600">笔触颜色</span>
-                        <div className="flex gap-1">
-                          {['#000000', '#ffffff', '#ffeb3b', '#4caf50', '#2196f3'].map((color) => (
-                            <button key={color} onClick={() => setStrokeColor(color)}
-                              className={`w-6 h-6 rounded-full border ${strokeColor === color ? 'border-red-500' : 'border-gray-300'}`}
-                              style={{ backgroundColor: color }} />
-                          ))}
-                        </div>
-                      </>
-                    )}
-                    <span className="text-sm text-gray-600">纸张颜色</span>
-                    <div className="flex gap-1">
-                      {paperColors.slice(0, 6).map((pc) => (
-                        <button key={pc.color} onClick={() => setPaperColor(pc.color)}
-                          className={`w-6 h-6 rounded-full border ${paperColor === pc.color ? 'border-yellow-400' : 'border-gray-300'}`}
-                          style={{ backgroundColor: pc.color }} />
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="w-px h-8 bg-gray-300 mx-1" />
-                    <div className="flex gap-1 bg-gray-100 rounded-full p-1">
-                      {([
-                        { key: 'yinke' as const, label: '阴刻' },
-                        { key: 'yangke' as const, label: '阳刻' },
-                        { key: 'yinyangke' as const, label: '阴阳刻' },
-                      ]).map((t) => (
-                        <button key={t.key} onClick={() => {
-                          setFinishResultType(t.key);
-                          finishResultTypeRef.current = t.key;
-                          renderEngravingPreview(t.key);
-                        }}
-                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${finishResultType === t.key ? 'bg-red-600 text-white shadow' : 'text-gray-600 hover:text-red-600'}`}>
-                          {t.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="w-px h-8 bg-gray-300 mx-1" />
-
-                    <motion.button whileTap={{ scale: 0.95 }} onClick={generateFinishResults}
-                      className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-full hover:from-red-700 hover:to-red-800 transition shadow-lg font-medium">
-                      <Check className="w-5 h-5" />完成作品
-                    </motion.button>
-                  </>
-                )}
+  <>
+    <div className="w-px h-8 bg-gray-300 mx-1" />
+    <span className="text-sm text-gray-500">
+      {fsHistoryIdx} / {fsHistoryLen - 1}
+    </span>
+  </>
+) : (
+  <>
+    <div className="w-px h-8 bg-gray-300 mx-1" />
+    <motion.button
+      whileTap={{ scale: 0.95 }}
+      onClick={generateFinishResults}
+      className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-full hover:from-red-700 hover:to-red-800 transition shadow-lg font-medium"
+    >
+      <Check className="w-5 h-5" />
+      完成作品
+    </motion.button>
+  </>
+)}
               </div>
             </motion.div>
           )}
@@ -1513,29 +1711,22 @@ const showSizeControl = tool === 'pencil' || tool === 'eraser';
 
         {/* ================ Finish Result Modal (阴刻/阳刻/阴阳刻) ================ */}
         <AnimatePresence>
-          {showFinishResult && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60] flex items-center justify-center" onClick={() => setShowFinishResult(false)}>
-              <div className="absolute inset-0 bg-white/80 backdrop-blur-md" />
+         {showFinishResult && (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 z-[60] flex items-center justify-center"
+    onClick={() => {
+      setShowFinishResult(false);
+      setFullscreenMode('cut');
+    }}
+  >
+    <div className="absolute inset-0 bg-white/80 backdrop-blur-md" />
               <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
                 className="relative z-10 flex flex-col items-center gap-5 max-w-lg w-full mx-4">
                 <h2 className="text-2xl font-bold text-gray-800">🎉 剪纸作品完成</h2>
-
-                {/* Engraving style switcher in modal */}
-                <div className="flex gap-1 bg-gray-100 rounded-full p-1">
-                  {([
-                    { key: 'yinke' as const, label: '阴刻', desc: '保留背景，图案镂空' },
-                    { key: 'yangke' as const, label: '阳刻', desc: '保留图案，去掉背景' },
-                    { key: 'yinyangke' as const, label: '阴阳刻', desc: '阴阳结合' },
-                  ]).map((t) => (
-                    <button key={t.key} onClick={() => setFinishResultType(t.key)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition ${finishResultType === t.key ? 'bg-red-600 text-white shadow' : 'text-gray-600 hover:text-red-600 hover:bg-white'}`}
-                      title={t.desc}>
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
 
                 {/* Preview */}
                 <div className="rounded-2xl shadow-xl overflow-hidden p-2 bg-white border border-gray-200">
@@ -1554,11 +1745,17 @@ const showSizeControl = tool === 'pencil' || tool === 'eraser';
                     className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-full shadow-lg hover:bg-red-700 transition font-medium">
                     <Download className="w-5 h-5" />下载作品
                   </motion.button>
-                  <motion.button whileTap={{ scale: 0.95 }}
-                    onClick={() => { setShowFinishResult(false); closeFullscreen(); }}
-                    className="flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-full shadow-lg hover:bg-gray-200 transition font-medium">
-                    <X className="w-5 h-5" />关闭
-                  </motion.button>
+                  <motion.button
+  whileTap={{ scale: 0.95 }}
+  onClick={() => {
+    setShowFinishResult(false);
+    setFullscreenMode('cut');
+  }}
+  className="flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-full shadow-lg hover:bg-gray-200 transition font-medium"
+>
+  <X className="w-5 h-5" />
+  关闭
+</motion.button>
                 </div>
               </motion.div>
             </motion.div>

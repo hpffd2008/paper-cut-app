@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Wand2, Sparkles, Image, Download, RefreshCw, Save,
-  Palette, History, Trash2, Zap
+  Palette, History, Trash2, Zap, FolderInput, X
 } from 'lucide-react';
 
 const styles = [
@@ -52,8 +53,12 @@ export default function AIGeneration() {
   const [showHistory, setShowHistory] = useState(false);
   const [pendingAiInputImage, setPendingAiInputImage] = useState<PendingAiInputImagePayload | null>(null);
   const [inputImagePreviewUrl, setInputImagePreviewUrl] = useState<string | null>(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showImportConfirmModal, setShowImportConfirmModal] = useState(false);
+
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
+  const navigate = useNavigate();
 useEffect(() => {
   const raw = sessionStorage.getItem('pendingAiInputImage');
   if (!raw) return;
@@ -134,19 +139,71 @@ useEffect(() => {
 };
 
   const handleSave = () => {
-    if (generatedImage) {
-      alert('作品已保存到作品集！');
-    }
-  };
+  if (generatedImage) {
+    setShowSaveModal(true);
+  }
+};
 
-  const handleDownload = () => {
-    if (generatedImage) {
-      const link = document.createElement('a');
-      link.download = `ai-papercut-${Date.now()}.png`;
-      link.href = generatedImage;
-      link.click();
-    }
-  };
+const handleRequestImportToStudio = () => {
+  if (generatedImage) {
+    setShowImportConfirmModal(true);
+  }
+};
+
+const normalizeImageToDataUrl = async (imageSrc: string) => {
+  if (imageSrc.startsWith('data:')) {
+    return imageSrc;
+  }
+
+  const response = await fetch(imageSrc);
+  if (!response.ok) {
+    throw new Error('无法读取生成图片');
+  }
+
+  const blob = await response.blob();
+
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('图片转 data URL 失败'));
+    reader.readAsDataURL(blob);
+  });
+
+  return dataUrl;
+};
+
+const handleConfirmImportToStudio = async () => {
+  if (!generatedImage) return;
+
+  try {
+    const dataUrl = await normalizeImageToDataUrl(generatedImage);
+
+    sessionStorage.setItem(
+      'pendingStudioImportImage',
+      JSON.stringify({
+        source: 'ai-generation',
+        mimeType: 'image/png',
+        dataUrl,
+        createdAt: Date.now(),
+      })
+    );
+
+    setShowImportConfirmModal(false);
+    navigate('/studio');
+  } catch (error) {
+    console.error('导入创作室失败：', error);
+    alert('导入创作室失败，请稍后重试');
+  }
+};
+
+const handleDownload = () => {
+  if (generatedImage) {
+    const link = document.createElement('a');
+    link.download = `ai-papercut-${Date.now()}.png`;
+    link.href = generatedImage;
+    link.click();
+  }
+};
 
   const handleDeleteHistory = (id: string) => {
     setHistory((prev) => prev.filter((item) => item.id !== id));
@@ -464,37 +521,47 @@ const handleRemoveInputImage = () => {
             </div>
 
             <AnimatePresence>
-              {generatedImage && !isGenerating && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                  className="flex items-center justify-center gap-4 mt-6"
-                >
-                  <button
-                    onClick={handleGenerate}
-                    className="flex items-center gap-2 px-5 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                    重新生成
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    className="flex items-center gap-2 px-5 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition"
-                  >
-                    <Save className="w-4 h-4" />
-                    保存作品
-                  </button>
-                  <button
-                    onClick={handleDownload}
-                    className="flex items-center gap-2 px-5 py-2 bg-white border-2 border-red-600 text-red-600 rounded-full hover:bg-red-50 transition"
-                  >
-                    <Download className="w-4 h-4" />
-                    下载
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+  {generatedImage && !isGenerating && (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
+      className="flex items-center justify-center gap-4 mt-6 flex-wrap"
+    >
+      <button
+        onClick={handleGenerate}
+        className="flex items-center gap-2 px-5 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition"
+      >
+        <RefreshCw className="w-4 h-4" />
+        重新生成
+      </button>
+
+      <button
+        onClick={handleRequestImportToStudio}
+        className="flex items-center gap-2 px-5 py-2 bg-white border-2 border-red-600 text-red-600 rounded-full hover:bg-red-50 transition"
+      >
+        <FolderInput className="w-4 h-4" />
+        导入创作室
+      </button>
+
+      <button
+        onClick={handleSave}
+        className="flex items-center gap-2 px-5 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition"
+      >
+        <Save className="w-4 h-4" />
+        保存作品
+      </button>
+
+      <button
+        onClick={handleDownload}
+        className="flex items-center gap-2 px-5 py-2 bg-white border-2 border-red-600 text-red-600 rounded-full hover:bg-red-50 transition"
+      >
+        <Download className="w-4 h-4" />
+        下载
+      </button>
+    </motion.div>
+  )}
+</AnimatePresence>
           </motion.div>
 
           <AnimatePresence>
@@ -552,6 +619,99 @@ const handleRemoveInputImage = () => {
           </AnimatePresence>
         </div>
       </div>
+      <AnimatePresence>
+  {showSaveModal && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      onClick={() => setShowSaveModal(false)}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 8 }}
+        transition={{ duration: 0.18 }}
+        className="w-full max-w-md rounded-2xl bg-white shadow-2xl p-6 relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={() => setShowSaveModal(false)}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
+          aria-label="关闭"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">保存作品</h3>
+        <p className="text-sm text-gray-600 leading-6">
+          登录与作品集功能将在后续任务中接入。
+          当前版本暂不保存到服务器，也不加入收藏。
+        </p>
+
+        <div className="mt-5 flex justify-end">
+          <button
+            onClick={() => setShowSaveModal(false)}
+            className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
+          >
+            我知道了
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
+<AnimatePresence>
+  {showImportConfirmModal && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4"
+      onClick={() => setShowImportConfirmModal(false)}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 8 }}
+        transition={{ duration: 0.18 }}
+        className="w-full max-w-md rounded-2xl bg-white shadow-2xl p-6 relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={() => setShowImportConfirmModal(false)}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
+          aria-label="关闭"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">导入创作室</h3>
+        <p className="text-sm text-gray-600 leading-6">
+          继续后将跳转到创作室，并把当前 AI 生成图片导入到画布。
+          <br />
+          <span className="text-red-600 font-medium">注意：这会覆盖创作室当前画布内容。</span>
+        </p>
+
+        <div className="mt-5 flex items-center justify-end gap-3">
+          <button
+            onClick={() => setShowImportConfirmModal(false)}
+            className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 transition"
+          >
+            取消
+          </button>
+          <button
+            onClick={handleConfirmImportToStudio}
+            className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
+          >
+            继续导入
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
     </div>
   );
 }
