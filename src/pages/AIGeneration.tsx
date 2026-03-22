@@ -37,32 +37,36 @@ interface GeneratedWork {
 }
 
 export default function AIGeneration() {
+  const generateEndpoint = import.meta.env.VITE_AI_GENERATE_ENDPOINT as string | undefined;
+
   const [prompt, setPrompt] = useState('');
   const [selectedStyle, setSelectedStyle] = useState('traditional');
   const [selectedColor, setSelectedColor] = useState('#c62828');
   const [complexity, setComplexity] = useState(3);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
   const [history, setHistory] = useState<GeneratedWork[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
-      alert('请输入剪纸描述');
+      setErrorMessage('请输入剪纸描述后再生成，例如“龙凤呈祥，传统风格”。');
       return;
     }
 
+    if (!generateEndpoint?.trim()) {
+      setErrorMessage('未配置 AI 接口地址。请在 .env.local 中填写 VITE_AI_GENERATE_ENDPOINT。');
+      return;
+    }
+
+    setErrorMessage('');
     setIsGenerating(true);
     setGeneratedImage(null);
 
     try {
-      const endpoint =
-        window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-          ? 'http://localhost:3000/generate'
-          : '/api/generate';
-
-      const response = await fetch(endpoint, {
+      const response = await fetch(generateEndpoint.trim(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -70,16 +74,16 @@ export default function AIGeneration() {
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok || !data.image) {
         console.error('后端返回：', data);
-        alert(
+        const backendMessage =
           data?.detail?.message ||
           data?.detail?.code ||
           data?.error ||
-          '生成失败'
-        );
+          '生成失败，请稍后重试。';
+        setErrorMessage(`生成失败：${backendMessage}`);
         return;
       }
 
@@ -97,7 +101,7 @@ export default function AIGeneration() {
       setHistory((prev) => [newWork, ...prev]);
     } catch (error) {
       console.error(error);
-      alert('请求失败，请确认后端已启动');
+      setErrorMessage('请求失败：无法连接到 AI 服务。请检查接口地址和后端服务是否可用。');
     } finally {
       setIsGenerating(false);
     }
@@ -277,6 +281,13 @@ export default function AIGeneration() {
               </>
             )}
           </motion.button>
+
+          {errorMessage && (
+            <div className="w-full p-3 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm">
+              <p className="font-medium mb-1">生成失败</p>
+              <p>{errorMessage}</p>
+            </div>
+          )}
         </div>
 
         <div className="lg:col-span-2">

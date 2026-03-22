@@ -1,10 +1,11 @@
-import { useState } from 'react';
+
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Heart, MessageCircle, Share2, Filter, Search,
-  TrendingUp, Clock, Star, Flame, Trophy, Users,
-  ChevronDown, Send, X
+  Heart, MessageCircle, Share2, Search,
+  Clock, Star, Flame, Trophy, Users,
+  Send, X
 } from 'lucide-react';
 import { useWorksStore, Work, Comment } from '../store/worksStore';
 import { useUserStore } from '../store/userStore';
@@ -15,6 +16,40 @@ const sortOptions = [
   { value: 'new', label: '最新', icon: Clock },
   { value: 'top', label: '精选', icon: Star },
 ];
+
+const categoryBackgroundMap: Record<string, string[]> = {
+  传统: ['traditional', 'classic'],
+  节庆: ['festive'],
+  花鸟: ['floral', 'nature'],
+  瑞兽: ['zodiac'],
+  人物: ['figure', 'character'],
+  现代: ['modern'],
+};
+
+function matchesCategory(work: Work, category: string) {
+  if (category === '全部') return true;
+  const background = (work.background || '').toLowerCase();
+  const expectedBackgrounds = categoryBackgroundMap[category] || [];
+  if (expectedBackgrounds.includes(background)) return true;
+
+  const text = `${work.title} ${work.notes}`;
+  switch (category) {
+    case '传统':
+      return /传统|经典|窗花|民俗/.test(text);
+    case '节庆':
+      return /节庆|新春|贺岁|福|喜|龙凤/.test(text);
+    case '花鸟':
+      return /花|鸟|蝶|梅|牡丹/.test(text);
+    case '瑞兽':
+      return /龙|凤|虎|鱼|生肖|瑞兽/.test(text);
+    case '人物':
+      return /人物|仕女|孩童|角色/.test(text);
+    case '现代':
+      return /现代|简约/.test(text);
+    default:
+      return false;
+  }
+}
 
 export default function Community() {
   const { works, likeWork, addComment } = useWorksStore();
@@ -29,6 +64,11 @@ export default function Community() {
     if (searchQuery && !work.title.includes(searchQuery) && !work.authorName.includes(searchQuery)) {
       return false;
     }
+
+    if (!matchesCategory(work, activeCategory)) {
+      return false;
+    }
+
     return true;
   });
 
@@ -38,6 +78,12 @@ export default function Community() {
     if (sortBy === 'top') return b.complexity - a.complexity;
     return 0;
   });
+
+  useEffect(() => {
+    if (!selectedWork) return;
+    const latest = works.find((work) => work.id === selectedWork.id);
+    if (latest) setSelectedWork(latest);
+  }, [works, selectedWork?.id]);
 
   const handleComment = () => {
     if (!selectedWork || !commentText.trim() || !isLoggedIn || !currentUser) return;
@@ -64,7 +110,7 @@ export default function Community() {
             <Users className="w-8 h-8 text-red-600" />
             剪纸社区
           </h1>
-          <p className="text-gray-500 mt-1">探索精彩作品，分享创作灵感</p>
+          <p className="text-gray-500 mt-1">探索精彩作，分享创作灵感</p>
         </div>
         
         {/* Search */}
@@ -301,12 +347,11 @@ function WorkCard({
   onLike: () => void;
   onComment: () => void;
 }) {
-  const [isLiked, setIsLiked] = useState(work.isLiked);
+  const isLiked = !!work.isLiked;
 
   const handleLike = () => {
     if (!isLiked) {
       onLike();
-      setIsLiked(true);
     }
   };
 
@@ -367,7 +412,7 @@ function WorkCard({
               className={`flex items-center gap-1 ${isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}`}
             >
               <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-              <span className="text-sm">{work.likes + (isLiked && !work.isLiked ? 1 : 0)}</span>
+              <span className="text-sm">{work.likes}</span>
             </motion.button>
             <button 
               onClick={onComment}
